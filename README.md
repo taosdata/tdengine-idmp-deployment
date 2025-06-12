@@ -1,2 +1,1 @@
-# tdengine-ai-deployment
-Deployment for TDengine AI
+# TDengine AI Deployment
