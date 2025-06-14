@@ -1,0 +1,110 @@
+---
+# Deploys and start TDengine AI.
+# Run command: ansible-playbook playbooks/tdengine-ai.yml --ask-vault-pass
+
+- name: Deploy TDengine AI
+  hosts: tdengine_ai_servers
+  vars_files:
+    - ../inventory/group_vars/public.yml
+  become: true
+  vars:
+    tdengine_ai_version: "0.9.6.20250613"  # custom version
+    download_url: "https://downloads.taosdata.com/tdengine-ai/enterprise/{{ tdengine_ai_version }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
+    install_dir: "/usr/local"  # default install_dir
+    tdengine_ai_dl_path: "/tmp"
+    required_services:
+      - tdengine-ai-h2
+      - tdengine-ai-ai
+      - tdengine-ai
+    check_port: 6042
+
+  tasks:
+    - name: Create temporary directory
+      ansible.builtin.file:
+        path: "{{ tdengine_ai_dl_path }}"
+        state: directory
+        mode: "0755"
+
+    - name: Check if package already exists
+      ansible.builtin.stat:
+        path: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
+      register: pkg_check
+
+    - name: Download TDengine AI package
+      ansible.builtin.get_url:
+        url: "{{ download_url }}"
+        dest: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
+        mode: "0644"
+        timeout: 30
+
+      when: not pkg_check.stat.exists
+
+    - name: Extract TDengine AI package
+      ansible.builtin.unarchive:
+        src: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
+        dest: "{{ tdengine_ai_dl_path }}"
+        remote_src: true
+
+    - name: Run install.sh with -d options
+      ansible.builtin.command: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}/install.sh -d {{ install_dir }}"
+      environment:
+        PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
+      register: install_output
+      changed_when:
+        - install_output.rc == 0
+        - "'already installed' not in (install_output.stdout|default(''))"
+
+    - name: Clean up temporary files
+      ansible.builtin.file:
+        path: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}"
+        state: absent
+
+    - name: Start and enable TDengine AI services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop: "{{ required_services }}"
+      register: service_status
+      retries: 3
+      delay: 10
+      until: service_status is success
+
+    - name: Verify services are running
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+      loop: "{{ required_services }}"
+      register: service_check
+      failed_when: >
+        service_check.failed or
+        service_check.status.ActiveState != 'active' or
+        service_check.status.SubState != 'running'
+
+    - name: Check if port {{ check_port }} is listening
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ check_port }}"
+        state: started
+        timeout: 30
+      register: port_check
+      retries: 5
+      delay: 5
+
+    - name: Verify TDengine AI installation
+      ansible.builtin.stat:
+        path: "{{ install_dir }}/tdengine-ai/bin"
+      register: tdengine_ai_bin
+      failed_when: not tdengine_ai_bin.stat.exists
+
+    - name: Display deployment validation results
+      ansible.builtin.debug:
+        msg: |
+          Deployment Summary:
+          - Services Status:
+            {% for item in required_services %}
+            {{ item }}: {{ service_check.results[loop.index0].status }}
+            {% endfor %}
+          - Port {{ check_port }} Status: {{ 'Listening' if port_check is success else 'Not listening' }}
+          - Installation Path: {{ install_dir }}/tdengine-ai/bin exists? {{ tdengine_ai_bin.stat.exists | default('false') }}
+
