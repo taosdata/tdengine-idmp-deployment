@@ -1,12 +1,7 @@
 FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG INSTALL_DIR=/usr/local
 ARG DOWNLOAD_URL
-
-ENV INSTALL_DIR=${INSTALL_DIR}
-
-WORKDIR /root
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
@@ -23,17 +18,16 @@ RUN apt-get update \
 RUN groupadd -r tdengine --gid=101 \
     && useradd -r -g tdengine --uid=101 --home-dir=/home/tdengine --shell=/bin/bash tdengine
 
-RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /root/TDengine-ai-enterprise-Linux.tar.gz \
-    && mkdir TDengine-ai-enterprise \
-    && tar -xzvf TDengine-ai-enterprise-Linux.tar.gz -C TDengine-ai-enterprise --strip-components=1 \
-    && /root/TDengine-ai-enterprise/install.sh -d ${INSTALL_DIR} \
-    && rm -rf /root/TDengine-ai-enterprise /root/TDengine-ai-enterprise-Linux.tar.gz \
-    && mkdir -p /usr/local/tdengine-ai/logs \
+RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-ai-enterprise-linux.tar.gz \
+    && tar -xzf /tmp/tdengine-ai-enterprise-linux.tar.gz -C /tmp \
+    && rm -f /tmp/tdengine-ai-enterprise-linux.tar.gz \
+    && cd /tmp/tdengine-ai-enterprise-* \
+    && ./install.sh \
+    && rm -rf /tmp/* \
     && chown -R tdengine:tdengine /usr/local/tdengine-ai
 
-RUN chown -R tdengine:tdengine ${INSTALL_DIR}/tdengine || true
-
 COPY entrypoint.sh /entrypoint.sh
+
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 6042

@@ -4,9 +4,6 @@ services:
     container_name: tdengine
     hostname: tdengine
     restart: always
-    environment:
-      TAOS_ROOT_PASSWORD: "taosdata"
-      TAOS_ADAPTER_UPLOAD_KEEPER_ENABLE: "false"
     ports:
       - "6030:6030" 
       - "6041:6041" 
