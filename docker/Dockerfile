@@ -22,7 +22,7 @@ RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-ai-ent
     && tar -xzf /tmp/tdengine-ai-enterprise-linux.tar.gz -C /tmp \
     && rm -f /tmp/tdengine-ai-enterprise-linux.tar.gz \
     && cd /tmp/tdengine-ai-enterprise-* \
-    && ./install.sh \
+    && ./install.sh -s \
     && rm -rf /tmp/* \
     && chown -R tdengine:tdengine /usr/local/tdengine-ai
 
