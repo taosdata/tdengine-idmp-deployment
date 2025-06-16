@@ -1,0 +1,41 @@
+# values.yaml
+
+# Number of tdengine-ai replicas
+replicaCount: 1
+
+image:
+  # Docker image repository
+  repository: tdengine/tdengine-ai
+  # Docker image tag
+  tag: latest
+  # Image pull policy (IfNotPresent/Always/Never)
+  pullPolicy: IfNotPresent
+
+service:
+  # Kubernetes Service type (ClusterIP/NodePort/LoadBalancer)
+  type: ClusterIP
+  # Service port for tdengine-ai
+  port: 6042
+
+# Resource requests and limits for the tdengine-ai container
+resources: {}
+
+persistence:
+  # Enable persistent storage
+  enabled: false
+  # StorageClass name (leave empty for default)
+  storageClass: ""
+  # PersistentVolume access modes
+  accessModes:
+    - ReadWriteOnce
+  # PersistentVolume size
+  size: 2Gi
+
+# Node selector for pod assignment
+nodeSelector: {}
+
+# Tolerations for pod assignment
+tolerations: []
+
+# Affinity rules for pod assignment
+affinity: {}
