@@ -1,6 +1,6 @@
 # TDengine AI 部署
 
-[English](README.md) | [简体中文](README-CN.md)
+简体中文 | [English](README.md)
 
 ## 简介
 

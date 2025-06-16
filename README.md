@@ -1,6 +1,6 @@
 # TDengine AI Deployment
 
-[English](README.md) | [简体中文](README-CN.md)
+English | [简体中文](README-CN.md)
 
 ## Introduction
 
