@@ -1,6 +1,6 @@
-简体中文 | [English](README.md)
-
 # 使用 Ansible 部署 TDengine AI
+
+简体中文 | [English](README.md)
 
 本项目提供了一套基于 Ansible 的自动化部署工具，用于简化 TDengine AI 的部署过程。通过这套工具，您可以轻松地在多台服务器上完成 TDengine AI 的安装和配置。
 

@@ -36,8 +36,8 @@ For Kubernetes-based deployment, see [Helm Deployment Guide](helm/README.md)
   - SSH access to target machines
   - Python 3.6+
 - For Docker deployment:
-  - Docker 20.10+
-  - Docker Compose v2.0+ (optional)
+  - Docker 19.03+
+  - Docker Compose v1.27.0+ (optional)
 - For Helm deployment:
   - Kubernetes 1.18+
   - Helm 3.0+

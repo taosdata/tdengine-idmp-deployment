@@ -1,6 +1,6 @@
-English | [简体中文](README-CN.md)
-
 # Deploy TDengine AI with Ansible
+
+English | [简体中文](README-CN.md)
 
 This project provides an Ansible-based automation tool to simplify the deployment of TDengine AI. With this tool, you can easily install and configure TDengine AI across multiple servers.
 

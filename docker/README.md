@@ -1,5 +1,7 @@
 # TDengine AI Docker Project
 
+English | [简体中文](README-CN.md)
+
 This project provides a Dockerized version of the TDengine AI application. It includes all necessary files to build, run, and deploy the TDengine AI application using Docker and Docker Compose.
 
 ## Project Structure

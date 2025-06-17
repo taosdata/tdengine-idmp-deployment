@@ -36,8 +36,8 @@ TDengine AI 部署工具提供了多种部署方案，以支持不同的部署�
   - 目标机器的 SSH 访问权限
   - Python 3.6+
 - Docker 部署：
-  - Docker 20.10+
-  - Docker Compose v2.0+（可选）
+  - Docker 19.03+
+  - Docker Compose v1.27.0+ (可选)
 - Helm 部署：
   - Kubernetes 1.18+
   - Helm 3.0+
