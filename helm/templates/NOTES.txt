@@ -1,0 +1,26 @@
+Thank you for installing TDengine AI!
+
+To access the TDengine AI service:
+
+1. Inside the cluster:
+   Service name: {{ include "tdengine-ai.fullname" . }}
+   Port: {{ .Values.service.port }}
+
+2. From your local machine (using port-forward):
+   kubectl port-forward svc/{{ include "tdengine-ai.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+
+   Then access: http://localhost:{{ .Values.service.port }}
+
+3. If service.type is NodePort:
+   Get the NodePort and node IP:
+   kubectl get svc {{ include "tdengine-ai.fullname" . }}
+   kubectl get nodes -o wide
+
+   Then Access the service at:
+   http://<NodeIP>:<NodePort>
+
+   Replace <NodeIP> with the IP address of any Kubernetes node.
+   Replace <NodePort> with the port number listed under the service.
+
+For more information, see:
+https://docs.tdengine.ai

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: tdengine-ai
+description: A Helm chart for deploying TDengine Asset Intelligence
+type: application
+version: 0.1.0
+appVersion: "latest"
+icon: "https://www.taosdata.com/images/taosdata-logo.png"
