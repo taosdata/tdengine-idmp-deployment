@@ -32,12 +32,12 @@ TDengine AI 部署工具提供了多种部署方案，以支持不同的部署�
 ## 环境要求
 
 - Ansible 部署：
-  - Ansible 2.9+
+  - Ansible 2.10+
   - 目标机器的 SSH 访问权限
   - Python 3.6+
 - Docker 部署：
-  - Docker 19.03+
-  - Docker Compose v1.27.0+ (可选)
+  - Docker 20.10+
+  - Docker Compose v1.29.2+
 - Helm 部署：
   - Kubernetes 1.24+
   - Helm 3.0+

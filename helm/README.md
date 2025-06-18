@@ -54,7 +54,7 @@ You can override any parameter using `--set key=value` or by editing `values.yam
 - **ClusterIP (default):**
   Use port-forward to access from your local machine:
   ```bash
-  kubectl port-forward svc/tdengine-ai 6042:6042
+  kubectl port-forward svc/tdengine-ai 6042:6042 --address 0.0.0.0
   ```
   Then access `localhost:6042`.
 

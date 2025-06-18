@@ -32,12 +32,12 @@ For Kubernetes-based deployment, see [Helm Deployment Guide](helm/README.md)
 ## Requirements
 
 - For Ansible deployment:
-  - Ansible 2.9+
+  - Ansible 2.10+
   - SSH access to target machines
   - Python 3.6+
 - For Docker deployment:
-  - Docker 19.03+
-  - Docker Compose v1.27.0+ (optional)
+  - Docker 20.10+
+  - Docker Compose v1.29.2+
 - For Helm deployment:
   - Kubernetes 1.24+
   - Helm 3.0+

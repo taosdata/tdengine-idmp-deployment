@@ -54,7 +54,7 @@ helm uninstall tdengine-ai
 - **ClusterIP（默认）：**
   使用端口转发从本地机器访问：
   ```bash
-  kubectl port-forward svc/tdengine-ai 6042:6042
+  kubectl port-forward svc/tdengine-ai 6042:6042 --address 0.0.0.0
   ```
   然后访问 `localhost:6042`。
 
