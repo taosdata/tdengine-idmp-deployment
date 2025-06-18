@@ -5,11 +5,11 @@ services:
     hostname: tdengine
     restart: always
     ports:
-      - "6030:6030" 
-      - "6041:6041" 
+      - "6030:6030"
+      - "6041:6041"
       - "6043:6043"
-      - "6044-6049:6044-6049" 
-      - "6044-6045:6044-6045/udp" 
+      - "6044-6049:6044-6049"
+      - "6044-6045:6044-6045/udp"
       - "6060:6060"
     volumes:
       - tdengine_data:/var/lib/taos
@@ -18,7 +18,7 @@ services:
       - taos_net
 
   tdengine-ai:
-    image: tdengine/tdengine-ai:latest
+    image: tdengine-ai:0.9.6
     container_name: tdengine-ai
     restart: always
     depends_on:

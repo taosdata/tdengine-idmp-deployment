@@ -24,7 +24,7 @@ TDengine AI docker
 To build the TDengine AI Docker image, navigate to the project directory and run the following command:
 
 ```bash
-docker build -t tdengine-ai:0.9.6-20250609 --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-ai/enterprise/0.9.6.0609/TDengine-ai-enterprise-0.9.6.0609-Linux.tar.gz" -f Dockerfile .
+docker build -t tdengine-ai:0.9.6-20250609 --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-ai/enterprise/0.9.6.0609/tdengine-ai-enterprise-0.9.6.0609-linux.tar.gz" -f Dockerfile .
 ```
 
 ## Running the Docker Container
