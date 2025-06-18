@@ -39,7 +39,7 @@ For Kubernetes-based deployment, see [Helm Deployment Guide](helm/README.md)
   - Docker 19.03+
   - Docker Compose v1.27.0+ (optional)
 - For Helm deployment:
-  - Kubernetes 1.18+
+  - Kubernetes 1.24+
   - Helm 3.0+
 
 ## Contributing
