@@ -14,7 +14,7 @@
     tdengine_ai_dl_path: "/tmp"
     required_services:
       - tdengine-ai-h2
-      - tdengine-ai-ai
+      - tdengine-ai-chat
       - tdengine-ai
     check_port: 6042
 
