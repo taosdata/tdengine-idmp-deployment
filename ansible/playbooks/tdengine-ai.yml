@@ -8,13 +8,13 @@
     - ../inventory/group_vars/public.yml
   become: true
   vars:
-    tdengine_ai_version: "0.9.6.20250613"  # custom version
+    tdengine_ai_version: "0.9.6"  # custom version
     download_url: "https://downloads.taosdata.com/tdengine-ai/enterprise/{{ tdengine_ai_version }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
     install_dir: "/usr/local"  # default install_dir
     tdengine_ai_dl_path: "/tmp"
     required_services:
       - tdengine-ai-h2
-      - tdengine-ai-ai
+      - tdengine-ai-chat
       - tdengine-ai
     check_port: 6042
 

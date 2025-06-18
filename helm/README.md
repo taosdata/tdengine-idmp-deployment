@@ -1,5 +1,7 @@
 # TDengine-AI Helm Chart
 
+English | [简体中文](README-CN.md)
+
 This Helm Chart deploys the **TDengine Asset Intelligence** service on Kubernetes.
 
 ## Prerequisites
@@ -49,30 +51,30 @@ You can override any parameter using `--set key=value` or by editing `values.yam
 
 ## Accessing the Service
 
-- **ClusterIP (default):**  
+- **ClusterIP (default):**
   Use port-forward to access from your local machine:
   ```bash
-  kubectl port-forward svc/tdengine-ai 6042:6042
+  kubectl port-forward svc/tdengine-ai 6042:6042 --address 0.0.0.0
   ```
   Then access `localhost:6042`.
 
-- **NodePort:**  
+- **NodePort:**
   1. Get the NodePort and node IP:
      ```bash
      kubectl get svc tdengine-ai
      kubectl get nodes -o wide
      ```
   2. Access the service at `http://<NodeIP>:<NodePort>`
-     > **Note:**  
-     > - Make sure the NodePort is open in your firewall or cloud security group.  
+     > **Note:**
+     > - Make sure the NodePort is open in your firewall or cloud security group.
      > - You can use any node's IP in the cluster.
 
-- **LoadBalancer:**  
+- **LoadBalancer:**
   Access via the external IP assigned by your cloud provider.
 
 ## Persistence
 
-To enable persistent storage, set `persistence.enabled: true` in `values.yaml`.  
+To enable persistent storage, set `persistence.enabled: true` in `values.yaml`.
 Make sure your cluster supports PersistentVolume provisioning.
 
 ## Customization
