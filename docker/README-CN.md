@@ -21,10 +21,12 @@ TDengine AI docker
 
 ## 构建 Docker 镜像
 
-要构建 TDengine AI Docker 镜像，请导航到项目目录并运行以下命令：
+要构建 TDengine AI Docker 镜像，请导航到项目目录并运行以下命令。以版本 0.9.6 为例：
 
 ```bash
-docker build -t tdengine-ai:0.9.6 --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-ai/enterprise/0.9.6/tdengine-ai-enterprise-0.9.6-linux.tar.gz" -f Dockerfile .
+docker build \
+-t tdengine-ai:0.9.6 \
+--build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-ai/enterprise/0.9.6/tdengine-ai-enterprise-0.9.6-linux.tar.gz" .
 ```
 
 ## 运行 Docker 容器
@@ -32,7 +34,7 @@ docker build -t tdengine-ai:0.9.6 --build-arg DOWNLOAD_URL="https://downloads.ta
 构建镜像后，您可以使用 Docker Compose 运行 TDengine AI 应用程序。执行以下命令：
 
 ```bash
-docker-compose -f docker-compose.yml up -d
+docker compose -f docker-compose.yml up -d
 ```
 
 此命令将启动 TDengine AI 应用程序及其定义的所有依赖项。
@@ -42,5 +44,5 @@ docker-compose -f docker-compose.yml up -d
 要停止运行中的应用程序，您可以使用：
 
 ```bash
-docker-compose -f docker-compose.yml down
+docker compose -f docker-compose.yml down
 ```
