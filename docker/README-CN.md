@@ -25,8 +25,9 @@ TDengine AI docker
 
 ```bash
 docker build \
-  -t tdengine-ai:latest \
+  -t tdengine-ai:0.9.6 \
   --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-ai/enterprise/0.9.6/tdengine-ai-enterprise-0.9.6-linux.tar.gz" .
+docker tag tdengine/tdengine-ai:0.9.6 tdengine/tdengine-ai:latest
 ```
 
 ## 运行 Docker 容器
