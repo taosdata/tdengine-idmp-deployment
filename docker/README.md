@@ -1,16 +1,16 @@
-# TDengine AI Docker Project
+# TDengine IDP Docker Project
 
 English | [简体中文](README-CN.md)
 
-This project provides a Dockerized version of the TDengine AI application. It includes all necessary files to build, run, and deploy the TDengine AI application using Docker and Docker Compose.
+This project provides a Dockerized version of the TDengine IDP application. It includes all necessary files to build, run, and deploy the TDengine IDP application using Docker and Docker Compose.
 
 ## Project Structure
 
 ```
-TDengine AI docker
-│── Dockerfile           # Instructions to build the TDengine AI Docker image
-│── entrypoint.sh        # Script to initialize the TDengine AI application
-│── docker-compose.yml   # Configuration for deploying TDengine AI with Docker Compose
+TDengine IDP docker
+│── Dockerfile           # Instructions to build the TDengine IDP Docker image
+│── entrypoint.sh        # Script to initialize the TDengine IDP application
+│── docker-compose.yml   # Configuration for deploying TDengine IDP with Docker Compose
 └── README.md            # Documentation for the project
 ```
 
@@ -21,24 +21,24 @@ TDengine AI docker
 
 ## Building the Docker Image
 
-To build the TDengine AI Docker image, navigate to the project directory and run the following command, take version 0.9.6 for example:
+To build the TDengine IDP Docker image, navigate to the project directory and run the following command, take version 0.9.6 for example:
 
 ```bash
 docker build \
-  -t tdengine/tdengine-ai:0.9.6 \
-  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-ai/enterprise/0.9.6/tdengine-ai-enterprise-0.9.6-linux.tar.gz" .
-docker tag tdengine/tdengine-ai:0.9.6 tdengine/tdengine-ai:latest
+  -t tdengine/tdengine-idp:0.9.6 \
+  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idp/enterprise/0.9.6/tdengine-idp-enterprise-0.9.6-linux.tar.gz" .
+docker tag tdengine/tdengine-idp:0.9.6 tdengine/tdengine-idp:latest
 ```
 
 ## Running the Docker Container
 
-After building the image, you can run the TDengine AI application using Docker Compose. Execute the following command:
+After building the image, you can run the TDengine IDP application using Docker Compose. Execute the following command:
 
 ```bash
 docker compose -f docker-compose.yml up -d
 ```
 
-This command will start the TDengine AI application along with any defined dependencies.
+This command will start the TDengine IDP application along with any defined dependencies.
 
 ## Stopping the Application
 

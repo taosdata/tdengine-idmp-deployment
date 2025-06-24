@@ -28,13 +28,13 @@ ENV TZ=Asia/Shanghai \
 RUN groupadd -r tdengine --gid=101 \
     && useradd -r -g tdengine --uid=101 --home-dir=/home/tdengine --shell=/bin/bash tdengine
 
-RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-ai-enterprise-linux.tar.gz \
-    && tar -xzf /tmp/tdengine-ai-enterprise-linux.tar.gz -C /tmp \
-    && rm -f /tmp/tdengine-ai-enterprise-linux.tar.gz \
-    && cd /tmp/tdengine-ai-enterprise-* \
+RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-idp-enterprise-linux.tar.gz \
+    && tar -xzf /tmp/tdengine-idp-enterprise-linux.tar.gz -C /tmp \
+    && rm -f /tmp/tdengine-idp-enterprise-linux.tar.gz \
+    && cd /tmp/tdengine-idp-enterprise-* \
     && ./install.sh -s -n \
     && rm -rf /tmp/* \
-    && chown -R tdengine:tdengine /usr/local/tdengine-ai
+    && chown -R tdengine:tdengine /usr/local/taos/idp
 
 COPY entrypoint.sh /entrypoint.sh
 

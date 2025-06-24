@@ -1,8 +1,8 @@
-# TDengine-AI Helm Chart
+# TDengine-IDP Helm Chart
 
 English | [简体中文](README-CN.md)
 
-This Helm Chart deploys the **TDengine Asset Intelligence** service on Kubernetes.
+This Helm Chart deploys the **TDengine Industrial Data Platform** service on Kubernetes.
 
 ## Prerequisites
 
@@ -12,19 +12,19 @@ This Helm Chart deploys the **TDengine Asset Intelligence** service on Kubernete
 ## Installation
 
 ```bash
-helm install tdengine-ai .
+helm install tdengine-idp .
 ```
 
 Or with custom values:
 
 ```bash
-helm install tdengine-ai . -f my-values.yaml
+helm install tdengine-idp . -f my-values.yaml
 ```
 
 ## Uninstallation
 
 ```bash
-helm uninstall tdengine-ai
+helm uninstall tdengine-idp
 ```
 
 ## Configuration
@@ -34,7 +34,7 @@ The following table lists the configurable parameters of the chart and their def
 | Parameter                  | Description                                 | Default                |
 |----------------------------|---------------------------------------------|------------------------|
 | `replicaCount`             | Number of replicas                          | `1`                    |
-| `image.repository`         | Image repository                            | `tdengine/tdengine-ai` |
+| `image.repository`         | Image repository                            | `tdengine/tdengine-idp`|
 | `image.tag`                | Image tag                                   | `latest`               |
 | `image.pullPolicy`         | Image pull policy                           | `IfNotPresent`         |
 | `service.type`             | Kubernetes service type                     | `ClusterIP`            |
@@ -45,7 +45,7 @@ The following table lists the configurable parameters of the chart and their def
 | `persistence.storageClass` | StorageClass for persistent volume          | `""`                   |
 | `nodeSelector`             | Node selector for pod assignment            | `{}`                   |
 | `tolerations`              | Tolerations for pod assignment              | `[]`                   |
-| `affinity`                  | Affinity rules for pod assignment            | `{}`                   |
+| `affinity`                 | Affinity rules for pod assignment           | `{}`                   |
 
 You can override any parameter using `--set key=value` or by editing `values.yaml`.
 
@@ -54,14 +54,14 @@ You can override any parameter using `--set key=value` or by editing `values.yam
 - **ClusterIP (default):**
   Use port-forward to access from your local machine:
   ```bash
-  kubectl port-forward svc/tdengine-ai 6042:6042 --address 0.0.0.0
+  kubectl port-forward svc/tdengine-idp 6042:6042 --address 0.0.0.0
   ```
   Then access `localhost:6042`.
 
 - **NodePort:**
   1. Get the NodePort and node IP:
      ```bash
-     kubectl get svc tdengine-ai
+     kubectl get svc tdengine-idp
      kubectl get nodes -o wide
      ```
   2. Access the service at `http://<NodeIP>:<NodePort>`

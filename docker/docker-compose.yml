@@ -17,9 +17,9 @@ services:
     networks:
       - taos_net
 
-  tdengine-ai:
-    image: tdengine/tdengine-ai:latest
-    container_name: tdengine-ai
+  tdengine-idp:
+    image: tdengine/tdengine-idp:latest
+    container_name: tdengine-idp
     restart: always
     depends_on:
       - tdengine

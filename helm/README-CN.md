@@ -1,8 +1,8 @@
-# TDengine-AI Helm Chart
+# TDengine-IDP Helm Chart
 
 简体中文 | [English](README.md)
 
-此 Helm Chart 用于在 Kubernetes 上部署 **TDengine 资产智能** 服务。
+此 Helm Chart 用于在 Kubernetes 上部署 **TDengine 工业数据平台** 服务。
 
 ## 前置条件
 
@@ -12,19 +12,19 @@
 ## 安装
 
 ```bash
-helm install tdengine-ai .
+helm install tdengine-idp .
 ```
 
 或使用自定义配置值：
 
 ```bash
-helm install tdengine-ai . -f my-values.yaml
+helm install tdengine-idp . -f my-values.yaml
 ```
 
 ## 卸载
 
 ```bash
-helm uninstall tdengine-ai
+helm uninstall tdengine-idp
 ```
 
 ## 配置
@@ -34,7 +34,7 @@ helm uninstall tdengine-ai
 | 参数                      | 描述                                       | 默认值                  |
 |--------------------------|-------------------------------------------|------------------------|
 | `replicaCount`           | 副本数量                                   | `1`                    |
-| `image.repository`       | 镜像仓库                                   | `tdengine/tdengine-ai` |
+| `image.repository`       | 镜像仓库                                   | `tdengine/tdengine-idp` |
 | `image.tag`              | 镜像标签                                   | `latest`               |
 | `image.pullPolicy`       | 镜像拉取策略                               | `IfNotPresent`         |
 | `service.type`           | Kubernetes 服务类型                        | `ClusterIP`            |
@@ -54,14 +54,14 @@ helm uninstall tdengine-ai
 - **ClusterIP（默认）：**
   使用端口转发从本地机器访问：
   ```bash
-  kubectl port-forward svc/tdengine-ai 6042:6042 --address 0.0.0.0
+  kubectl port-forward svc/tdengine-idp 6042:6042 --address 0.0.0.0
   ```
   然后访问 `localhost:6042`。
 
 - **NodePort：**
   1. 获取 NodePort 和节点 IP：
      ```bash
-     kubectl get svc tdengine-ai
+     kubectl get svc tdengine-idp
      kubectl get nodes -o wide
      ```
   2. 通过 `http://<节点IP>:<NodePort>` 访问服务

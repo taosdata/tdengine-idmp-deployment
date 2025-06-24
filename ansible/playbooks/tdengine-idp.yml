@@ -1,52 +1,52 @@
 ---
-# Deploys and start TDengine AI.
-# Run command: ansible-playbook playbooks/tdengine-ai.yml --ask-vault-pass
+# Deploys and start TDengine IDP.
+# Run command: ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass
 
-- name: Deploy TDengine AI
-  hosts: tdengine_ai_servers
+- name: Deploy TDengine IDP
+  hosts: tdengine_idp_servers
   vars_files:
     - ../inventory/group_vars/public.yml
   become: true
   vars:
-    tdengine_ai_version: "0.9.6"  # custom version
-    download_url: "https://downloads.taosdata.com/tdengine-ai/enterprise/{{ tdengine_ai_version }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
+    tdengine_idp_version: "0.9.6"  # custom version
+    download_url: "https://downloads.taosdata.com/tdengine-idp/enterprise/{{ tdengine_idp_version }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}-linux.tar.gz"
     install_dir: "/usr/local"  # default install_dir
-    tdengine_ai_dl_path: "/tmp"
+    tdengine_idp_dl_path: "/tmp"
     required_services:
-      - tdengine-ai-h2
-      - tdengine-ai-chat
-      - tdengine-ai
+      - tdengine-idp-h2
+      - tdengine-idp-chat
+      - tdengine-idp
     check_port: 6042
 
   tasks:
     - name: Create temporary directory
       ansible.builtin.file:
-        path: "{{ tdengine_ai_dl_path }}"
+        path: "{{ tdengine_idp_dl_path }}"
         state: directory
         mode: "0755"
 
     - name: Check if package already exists
       ansible.builtin.stat:
-        path: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
+        path: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}-linux.tar.gz"
       register: pkg_check
 
-    - name: Download TDengine AI package
+    - name: Download TDengine IDP package
       ansible.builtin.get_url:
         url: "{{ download_url }}"
-        dest: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
+        dest: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}-linux.tar.gz"
         mode: "0644"
         timeout: 30
 
       when: not pkg_check.stat.exists
 
-    - name: Extract TDengine AI package
+    - name: Extract TDengine IDP package
       ansible.builtin.unarchive:
-        src: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}-linux.tar.gz"
-        dest: "{{ tdengine_ai_dl_path }}"
+        src: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}-linux.tar.gz"
+        dest: "{{ tdengine_idp_dl_path }}"
         remote_src: true
 
     - name: Run install.sh with -d options
-      ansible.builtin.command: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}/install.sh -d {{ install_dir }}"
+      ansible.builtin.command: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}/install.sh -d {{ install_dir }}"
       environment:
         PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
       register: install_output
@@ -56,10 +56,10 @@
 
     - name: Clean up temporary files
       ansible.builtin.file:
-        path: "{{ tdengine_ai_dl_path }}/tdengine-ai-enterprise-{{ tdengine_ai_version }}"
+        path: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}"
         state: absent
 
-    - name: Start and enable TDengine AI services
+    - name: Start and enable TDengine IDP services
       ansible.builtin.systemd:
         name: "{{ item }}"
         state: started
@@ -91,11 +91,11 @@
       retries: 5
       delay: 5
 
-    - name: Verify TDengine AI installation
+    - name: Verify TDengine IDP installation
       ansible.builtin.stat:
-        path: "{{ install_dir }}/tdengine-ai/bin"
-      register: tdengine_ai_bin
-      failed_when: not tdengine_ai_bin.stat.exists
+        path: "{{ install_dir }}/tdengine-idp/bin"
+      register: tdengine_idp_bin
+      failed_when: not tdengine_idp_bin.stat.exists
 
     - name: Display deployment validation results
       ansible.builtin.debug:
@@ -106,5 +106,5 @@
             {{ item }}: {{ service_check.results[loop.index0].status }}
             {% endfor %}
           - Port {{ check_port }} Status: {{ 'Listening' if port_check is success else 'Not listening' }}
-          - Installation Path: {{ install_dir }}/tdengine-ai/bin exists? {{ tdengine_ai_bin.stat.exists | default('false') }}
+          - Installation Path: {{ install_dir }}/tdengine-idp/bin exists? {{ tdengine_idp_bin.stat.exists | default('false') }}
 

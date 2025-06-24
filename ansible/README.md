@@ -1,8 +1,8 @@
-# Deploy TDengine AI with Ansible
+# Deploy TDengine IDP with Ansible
 
 English | [简体中文](README-CN.md)
 
-This project provides an Ansible-based automation tool to simplify the deployment of TDengine AI. With this tool, you can easily install and configure TDengine AI across multiple servers.
+This project provides an Ansible-based automation tool to simplify the deployment of TDengine IDP. With this tool, you can easily install and configure TDengine IDP across multiple servers.
 
 ## Ansible Introduction
 
@@ -15,7 +15,7 @@ Ansible is an open-source automation tool for configuration management, applicat
 
 For Ansible installation and usage, please refer to the [Ansible Official Documentation](https://docs.ansible.com/ansible/latest/getting_started/index.html)
 
-## TDengine AI Deployment Steps
+## TDengine IDP Deployment Steps
 
 > **NOTE:**
 > This deployment solution uses `ansible-vault` to manage sensitive information, ensuring passwords and other sensitive data are securely stored in version control.
@@ -43,7 +43,7 @@ In this file, you need to configure the username and password information for al
 Run the following command to start deployment:
 
 ```bash
-ansible-playbook playbooks/tdengine-ai.yml --ask-vault-pass
+ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass
 ```
 
 When prompted for `Vault password`, enter: `taosdata`

@@ -1,10 +1,10 @@
-# TDengine AI Deployment
+# TDengine IDP Deployment
 
 English | [简体中文](README-CN.md)
 
 ## Introduction
 
-TDengine AI Deployment Tools provide multiple deployment solutions for TDengine AI, supporting various deployment scenarios and requirements. Whether you need to deploy on a single machine, multiple machines, or in a Kubernetes cluster, we offer corresponding solutions.
+TDengine IDP Deployment Tools provide multiple deployment solutions for TDengine IDP, supporting various deployment scenarios and requirements. Whether you need to deploy on a single machine, multiple machines, or in a Kubernetes cluster, we offer corresponding solutions.
 
 ## Features
 
