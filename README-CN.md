@@ -1,10 +1,10 @@
-# TDengine AI 部署
+# TDengine IDP 部署
 
 简体中文 | [English](README.md)
 
 ## 简介
 
-TDengine AI 部署工具提供了多种部署方案，以支持不同的部署场景和需求。无论您是需要单机部署、多机部署还是在 Kubernetes 集群中部署，我们都提供了相应的解决方案。
+TDengine IDP 部署工具提供了多种部署方案，以支持不同的部署场景和需求。无论您是需要单机部署、多机部署还是在 Kubernetes 集群中部署，我们都提供了相应的解决方案。
 
 ## 特性
 

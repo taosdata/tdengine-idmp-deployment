@@ -1,8 +1,8 @@
-# 使用 Ansible 部署 TDengine AI
+# 使用 Ansible 部署 TDengine IDP
 
 简体中文 | [English](README.md)
 
-本项目提供了一套基于 Ansible 的自动化部署工具，用于简化 TDengine AI 的部署过程。通过这套工具，您可以轻松地在多台服务器上完成 TDengine AI 的安装和配置。
+本项目提供了一套基于 Ansible 的自动化部署工具，用于简化 TDengine IDP 的部署过程。通过这套工具，您可以轻松地在多台服务器上完成 TDengine IDP 的安装和配置。
 
 ## Ansible 简介
 
@@ -15,7 +15,7 @@ Ansible 是一个开源的自动化工具，用于配置管理、应用部署、
 
 `Ansible` 安装和使用请参考 [Ansible 官方文档](https://docs.ansible.com/ansible/latest/getting_started/index.html)
 
-## TDengine AI 部署步骤
+## TDengine IDP 部署步骤
 
 > **NOTE:**
 > 本部署方案使用 `ansible-vault` 来管理敏感信息，以确保密码等敏感信息在版本控制中安全存储。
@@ -43,7 +43,7 @@ ansible-vault edit inventory/group_vars/public.yml
 运行以下命令开始部署：
 
 ```bash
-ansible-playbook playbooks/tdengine-ai.yml --ask-vault-pass
+ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass
 ```
 
 当系统提示输入 `Vault password` 时，请输入：`taosdata`
