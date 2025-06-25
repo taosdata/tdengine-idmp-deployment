@@ -1,14 +1,14 @@
 [tdengine_idp_servers]
-server1 ansible_host=192.168.1.*
-server2 ansible_host=192.168.2.*
+idp_server1 ansible_host=192.168.1.*
+idp_server2 ansible_host=192.168.2.*
 
 [tdengine_idp_servers:vars]
 ansible_user={{ ansible_ssh_user }}
 ansible_ssh_pass={{ vault_ssh_password }}
 
 [tdengine_servers]
-server1 ansible_host=192.168.1.*
-server2 ansible_host=192.168.2.*
+tsdb_server1 ansible_host=192.168.1.*
+tsdb_server2 ansible_host=192.168.2.*
 
 [tdengine_servers:vars]
 ansible_user={{ ansible_ssh_user }}
