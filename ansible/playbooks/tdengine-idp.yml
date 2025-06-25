@@ -1,7 +1,7 @@
 ---
 # Deploys and start TDengine IDP.
 # Run command: ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass
-# Deploy TDengine IDP with TDengine Enterprise Edition:
+# Deploy TDengine IDP and TDengine Enterprise Edition:
 # ansible-playbook playbooks/tdengine-idp.yml -e deploy_tdengine=true --ask-vault-pass
 
 - import_playbook: tdengine.yml
