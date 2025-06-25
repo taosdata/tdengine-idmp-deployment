@@ -7,7 +7,7 @@
   hosts: tdengine_servers
   gather_facts: true
   vars_files:
-    - ../inventory/group_vars/vault.yml
+    - ../inventory/group_vars/public.yml
   become: true
   vars:
     edition: "enterprise"  # community/enterprise
@@ -136,7 +136,7 @@
         mode: "0755"
       when: not pkg_check.stat.exists
 
-    - name: Public download
+    - name: Download TDengine package
       ansible.builtin.get_url:
         url: "{{ public_dl_url }}/{{ pkg_name }}"
         dest: "{{ tar_filepath }}/{{ pkg_name }}"
