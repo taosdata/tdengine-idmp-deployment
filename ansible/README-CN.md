@@ -40,10 +40,16 @@ ansible-vault edit inventory/group_vars/public.yml
 
 ### 3. 执行部署
 
-运行以下命令开始部署：
+运行以下命令仅部署 TDengine IDP 服务：
 
 ```bash
 ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass
+```
+
+或运行以下命令部署 TDengine TSDB 和 TDengine IDP 服务
+
+```bash
+ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass -e deploy_tdengine=true
 ```
 
 当系统提示输入 `Vault password` 时，请输入：`taosdata`

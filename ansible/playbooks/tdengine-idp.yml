@@ -7,7 +7,6 @@
 - import_playbook: tdengine.yml
   vars:
     edition: enterprise
-    first_ep: node1:6030
   when: deploy_tdengine is defined and deploy_tdengine
 
 - name: Deploy TDengine IDP

@@ -40,10 +40,16 @@ In this file, you need to configure the username and password information for al
 
 ### 3. Execute Deployment
 
-Run the following command to start deployment:
+Run the following command to start deploy TDengine IDP:
 
 ```bash
 ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass
+```
+
+Or run the following command to start deploy TDengine TSDB and TDengine IDP:
+
+```bash
+ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass -e deploy_tdengine=true
 ```
 
 When prompted for `Vault password`, enter: `taosdata`
