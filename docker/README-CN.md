@@ -21,13 +21,15 @@ TDengine IDMP docker
 
 ## 构建 Docker 镜像
 
-要构建 TDengine IDMP Docker 镜像，请导航到项目目录并运行以下命令。以版本 0.9.6 为例：
+要构建 TDengine IDMP Docker 镜像，请导航到项目目录并运行以下命令。
+
+**注意：** 请将 `<version>` 替换为实际的版本号。
 
 ```bash
 docker build \
-  -t tdengine/tdengine-idmp:0.9.6 \
-  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp/enterprise/0.9.6/tdengine-idmp-enterprise-0.9.6-linux.tar.gz" .
-docker tag tdengine/tdengine-idmp:0.9.6 tdengine/tdengine-idmp:latest
+  -t tdengine/tdengine-idmp:<version> \
+  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp/enterprise/<version>/tdengine-idmp-enterprise-<version>-linux.tar.gz" .
+docker tag tdengine/tdengine-idmp:<version> tdengine/tdengine-idmp:latest
 ```
 
 ## 运行 Docker 容器

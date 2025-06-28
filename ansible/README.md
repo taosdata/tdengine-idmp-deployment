@@ -42,14 +42,16 @@ In this file, you need to configure the username and password information for al
 
 Run the following command to start deploy TDengine IDMP:
 
+**Note:** Please replace `<idmp_version>` and `<tsdb_version>` with the actual version number.
+
 ```bash
-ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass
+ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version>
 ```
 
 Or run the following command to start deploy TDengine TSDB and TDengine IDMP:
 
 ```bash
-ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e deploy_tdengine=true
+ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version> -e deploy_tdengine=true -e tdengine_version=<tsdb_version>
 ```
 
 When prompted for `Vault password`, enter: `taosdata`

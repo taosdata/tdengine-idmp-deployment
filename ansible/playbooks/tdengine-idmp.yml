@@ -1,12 +1,13 @@
 ---
 # Deploys and start TDengine IDMP.
-# Run command: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass
+# Run command: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version>
 # Deploy TDengine IDMP and TDengine Enterprise Edition:
-# ansible-playbook playbooks/tdengine-idmp.yml -e deploy_tdengine=true --ask-vault-pass
+# Run command: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version> -e deploy_tdengine=true -e tdengine_version=<tsdb_version>
 
 - import_playbook: tdengine.yml
   vars:
     edition: enterprise
+    tdengine_version: "{{ tdengine_version }}"
   when: deploy_tdengine is defined and deploy_tdengine
 
 - name: Deploy TDengine IDMP
@@ -15,7 +16,6 @@
     - ../inventory/group_vars/public.yml
   become: true
   vars:
-    tdengine_idmp_version: "0.9.6"  # custom version
     download_url: "https://downloads.taosdata.com/tdengine-idmp/enterprise/{{ tdengine_idmp_version }}/tdengine-idmp-enterprise-{{ tdengine_idmp_version }}-linux.tar.gz"
     install_dir: "/usr/local"  # default install_dir
     tdengine_idmp_dl_path: "/tmp"

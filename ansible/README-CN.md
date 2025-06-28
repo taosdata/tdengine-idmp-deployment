@@ -42,14 +42,16 @@ ansible-vault edit inventory/group_vars/public.yml
 
 运行以下命令仅部署 TDengine IDMP 服务：
 
+**注意：** 请将 `<idmp_version>` and `<tsdb_version>` 替换为实际的版本号。
+
 ```bash
-ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass
+ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version>
 ```
 
 或运行以下命令部署 TDengine TSDB 和 TDengine IDMP 服务
 
 ```bash
-ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e deploy_tdengine=true
+ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version> -e deploy_tdengine=true -e tdengine_version=<tsdb_version>
 ```
 
 当系统提示输入 `Vault password` 时，请输入：`taosdata`

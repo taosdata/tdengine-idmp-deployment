@@ -21,13 +21,15 @@ TDengine IDMP docker
 
 ## Building the Docker Image
 
-To build the TDengine IDMP Docker image, navigate to the project directory and run the following command, take version 0.9.6 for example:
+To build the TDengine IDMP Docker image, navigate to the project directory and run the following command:
+
+**Note:** Please replace `<version>` with the actual version number.
 
 ```bash
 docker build \
-  -t tdengine/tdengine-idmp:0.9.6 \
-  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp/enterprise/0.9.6/tdengine-idmp-enterprise-0.9.6-linux.tar.gz" .
-docker tag tdengine/tdengine-idmp:0.9.6 tdengine/tdengine-idmp:latest
+  -t tdengine/tdengine-idmp:<version> \
+  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp/enterprise/<version>/tdengine-idmp-enterprise-<version>-linux.tar.gz" .
+docker tag tdengine/tdengine-idmp:<version> tdengine/tdengine-idmp:latest
 ```
 
 ## Running the Docker Container
