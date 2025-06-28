@@ -1,19 +1,19 @@
-Thank you for installing TDengine IDP!
+Thank you for installing TDengine IDMP!
 
-To access the TDengine IDP service:
+To access the TDengine IDMP service:
 
 1. Inside the cluster:
-   Service name: {{ include "tdengine-idp.fullname" . }}
+   Service name: {{ include "tdengine-idmp.fullname" . }}
    Port: {{ .Values.service.port }}
 
 2. From your local machine (using port-forward):
-   kubectl port-forward svc/{{ include "tdengine-idp.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+   kubectl port-forward svc/{{ include "tdengine-idmp.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
 
    Then access: http://localhost:{{ .Values.service.port }}
 
 3. If service.type is NodePort:
    Get the NodePort and node IP:
-   kubectl get svc {{ include "tdengine-idp.fullname" . }}
+   kubectl get svc {{ include "tdengine-idmp.fullname" . }}
    kubectl get nodes -o wide
 
    Then Access the service at:
@@ -23,4 +23,4 @@ To access the TDengine IDP service:
    Replace <NodePort> with the port number listed under the service.
 
 For more information, see:
-https://idpdocs.tdengine.com
+https://idmpdocs.tdengine.com

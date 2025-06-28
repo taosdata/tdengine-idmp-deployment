@@ -1,8 +1,8 @@
-# TDengine-IDP Helm Chart
+# TDengine-IDMP Helm Chart
 
 English | [简体中文](README-CN.md)
 
-This Helm Chart deploys the **TDengine Industrial Data Platform** service on Kubernetes.
+This Helm Chart deploys the **TDengine Industrial Data Management Platform** service on Kubernetes.
 
 ## Prerequisites
 
@@ -12,19 +12,19 @@ This Helm Chart deploys the **TDengine Industrial Data Platform** service on Kub
 ## Installation
 
 ```bash
-helm install tdengine-idp .
+helm install tdengine-idmp .
 ```
 
 Or with custom values:
 
 ```bash
-helm install tdengine-idp . -f my-values.yaml
+helm install tdengine-idmp . -f my-values.yaml
 ```
 
 ## Uninstallation
 
 ```bash
-helm uninstall tdengine-idp
+helm uninstall tdengine-idmp
 ```
 
 ## Configuration
@@ -34,7 +34,7 @@ The following table lists the configurable parameters of the chart and their def
 | Parameter                  | Description                                 | Default                |
 |----------------------------|---------------------------------------------|------------------------|
 | `replicaCount`             | Number of replicas                          | `1`                    |
-| `image.repository`         | Image repository                            | `tdengine/tdengine-idp`|
+| `image.repository`         | Image repository                            | `tdengine/tdengine-idmp`|
 | `image.tag`                | Image tag                                   | `latest`               |
 | `image.pullPolicy`         | Image pull policy                           | `IfNotPresent`         |
 | `service.type`             | Kubernetes service type                     | `ClusterIP`            |
@@ -54,14 +54,14 @@ You can override any parameter using `--set key=value` or by editing `values.yam
 - **ClusterIP (default):**
   Use port-forward to access from your local machine:
   ```bash
-  kubectl port-forward svc/tdengine-idp 6042:6042 --address 0.0.0.0
+  kubectl port-forward svc/tdengine-idmp 6042:6042 --address 0.0.0.0
   ```
   Then access `localhost:6042`.
 
 - **NodePort:**
   1. Get the NodePort and node IP:
      ```bash
-     kubectl get svc tdengine-idp
+     kubectl get svc tdengine-idmp
      kubectl get nodes -o wide
      ```
   2. Access the service at `http://<NodeIP>:<NodePort>`

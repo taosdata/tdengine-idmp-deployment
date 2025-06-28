@@ -2,11 +2,11 @@
 Expand the name of the chart.
 */ -}}
 
-{{- define "tdengine-idp.name" -}}
+{{- define "tdengine-idmp.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "tdengine-idp.fullname" -}}
+{{- define "tdengine-idmp.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -19,6 +19,6 @@ Expand the name of the chart.
 {{- end }}
 {{- end }}
 
-{{- define "tdengine-idp.chart" -}}
+{{- define "tdengine-idmp.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" }}
 {{- end }}

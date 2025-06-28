@@ -1,52 +1,59 @@
 ---
-# Deploys and start TDengine IDP.
-# Run command: ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass
+# Deploys and start TDengine IDMP.
+# Run command: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version>
+# Deploy TDengine IDMP and TDengine Enterprise Edition:
+# Run command: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version> -e deploy_tdengine=true -e tdengine_version=<tsdb_version>
 
-- name: Deploy TDengine IDP
-  hosts: tdengine_idp_servers
+- import_playbook: tdengine.yml
+  vars:
+    edition: enterprise
+    tdengine_version: "{{ tdengine_version }}"
+  when: deploy_tdengine is defined and deploy_tdengine
+
+- name: Deploy TDengine IDMP
+  hosts: tdengine_idmp_servers
   vars_files:
     - ../inventory/group_vars/public.yml
   become: true
   vars:
-    tdengine_idp_version: "0.9.6"  # custom version
-    download_url: "https://downloads.taosdata.com/tdengine-idp/enterprise/{{ tdengine_idp_version }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}-linux.tar.gz"
+    download_url: "https://downloads.taosdata.com/tdengine-idmp/enterprise/{{ tdengine_idmp_version }}/tdengine-idmp-enterprise-{{ tdengine_idmp_version }}-linux.tar.gz"
     install_dir: "/usr/local"  # default install_dir
-    tdengine_idp_dl_path: "/tmp"
+    tdengine_idmp_dl_path: "/tmp"
     required_services:
-      - tdengine-idp-h2
-      - tdengine-idp-chat
-      - tdengine-idp
+      - tdengine-idmp-h2
+      - tdengine-idmp-chat
+      - tdengine-idmp
     check_port: 6042
 
   tasks:
     - name: Create temporary directory
       ansible.builtin.file:
-        path: "{{ tdengine_idp_dl_path }}"
+        path: "{{ tdengine_idmp_dl_path }}"
         state: directory
         mode: "0755"
 
     - name: Check if package already exists
       ansible.builtin.stat:
-        path: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}-linux.tar.gz"
+        path: "{{ tdengine_idmp_dl_path }}/tdengine-idmp-enterprise-{{ tdengine_idmp_version }}-linux.tar.gz"
       register: pkg_check
 
-    - name: Download TDengine IDP package
+    - name: Download TDengine IDMP package
       ansible.builtin.get_url:
         url: "{{ download_url }}"
-        dest: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}-linux.tar.gz"
+        dest: "{{ tdengine_idmp_dl_path }}/tdengine-idmp-enterprise-{{ tdengine_idmp_version }}-linux.tar.gz"
         mode: "0644"
         timeout: 30
 
       when: not pkg_check.stat.exists
 
-    - name: Extract TDengine IDP package
+    - name: Extract TDengine IDMP package
       ansible.builtin.unarchive:
-        src: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}-linux.tar.gz"
-        dest: "{{ tdengine_idp_dl_path }}"
+        src: "{{ tdengine_idmp_dl_path }}/tdengine-idmp-enterprise-{{ tdengine_idmp_version }}-linux.tar.gz"
+        dest: "{{ tdengine_idmp_dl_path }}"
         remote_src: true
 
     - name: Run install.sh with -d options
-      ansible.builtin.command: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}/install.sh -d {{ install_dir }}"
+      ansible.builtin.command: "{{ tdengine_idmp_dl_path }}/tdengine-idmp-enterprise-{{ tdengine_idmp_version }}/install.sh -d {{ install_dir }}"
       environment:
         PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
       register: install_output
@@ -56,10 +63,10 @@
 
     - name: Clean up temporary files
       ansible.builtin.file:
-        path: "{{ tdengine_idp_dl_path }}/tdengine-idp-enterprise-{{ tdengine_idp_version }}"
+        path: "{{ tdengine_idmp_dl_path }}/tdengine-idmp-enterprise-{{ tdengine_idmp_version }}"
         state: absent
 
-    - name: Start and enable TDengine IDP services
+    - name: Start and enable TDengine IDMP services
       ansible.builtin.systemd:
         name: "{{ item }}"
         state: started
@@ -91,11 +98,11 @@
       retries: 5
       delay: 5
 
-    - name: Verify TDengine IDP installation
+    - name: Verify TDengine IDMP installation
       ansible.builtin.stat:
-        path: "{{ install_dir }}/tdengine-idp/bin"
-      register: tdengine_idp_bin
-      failed_when: not tdengine_idp_bin.stat.exists
+        path: "{{ install_dir }}/tdengine-idmp/bin"
+      register: tdengine_idmp_bin
+      failed_when: not tdengine_idmp_bin.stat.exists
 
     - name: Display deployment validation results
       ansible.builtin.debug:
@@ -106,5 +113,5 @@
             {{ item }}: {{ service_check.results[loop.index0].status }}
             {% endfor %}
           - Port {{ check_port }} Status: {{ 'Listening' if port_check is success else 'Not listening' }}
-          - Installation Path: {{ install_dir }}/tdengine-idp/bin exists? {{ tdengine_idp_bin.stat.exists | default('false') }}
+          - Installation Path: {{ install_dir }}/tdengine-idmp/bin exists? {{ tdengine_idmp_bin.stat.exists | default('false') }}
 

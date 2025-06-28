@@ -1,0 +1,244 @@
+---
+# Deploys and start TDengine (Community/Enterprise Edition)
+# Run command:
+# ansible-playbook playbooks/tdengine.yml -e "edition=enterprise first_ep=node1:6030"
+
+- name: Deploy TDengine application
+  hosts: tdengine_servers
+  gather_facts: true
+  vars_files:
+    - ../inventory/group_vars/public.yml
+  become: true
+  vars:
+    edition: "enterprise"  # community/enterprise
+    tdengine_version: "3.3.6.0"
+    tdengine_major_version: "{{ tdengine_version.split('.')[:2] | join('.') }}"
+
+    public_dl_url: "https://www.tdengine.com/downloads/{{ 'enterprise' if edition == 'enterprise' else 'community' }}/{{ tdengine_version }}"
+    pkg_name: "TDengine-{{ tdengine_version }}-{{ 'enterprise' if edition == 'enterprise' else 'community' }}-Linux-x64.tar.gz"
+
+    # Cluster config
+    cluster_nodes: "{{ groups['tdengine_servers'] }}"
+
+    # Create all nodes by default, otherwise take the user input value.
+    # dnode_count: "{{ (cluster_nodes | length) if dnode_count is undefined else dnode_count | int }}"
+    # dnode_count: "{{ dnode_count | default(cluster_nodes | length) | int }}"
+
+    # Install config
+    tar_filepath: "/tmp/tdengine"
+    config_dir: "/etc/taos"
+
+    # taos config
+    taos_config:
+      serverPort: "6030"
+      fqdn: "{{ ansible_hostname }}"
+      dataDir: "/var/lib/taos"
+      logDir: "/var/log/taos"
+      debugFlag: 131
+
+    # Service control
+    community_services:
+      - taosd
+      - taosadapter
+      - taoskeeper
+    enterprise_services:
+      - taosd
+      - taosadapter
+      - taoskeeper
+      - taosx
+    check_port: 6030
+
+  tasks:
+    - name: Set default dnode_count
+      set_fact:
+        final_dnode_count: "{{ (dnode_count | default(cluster_nodes | length)) | int }}"
+      run_once: true
+      when: dnode_count is undefined
+
+    - name: Override dnode_count if specified
+      set_fact:
+        final_dnode_count: "{{ dnode_count | int }}"
+      run_once: true
+      when: dnode_count is defined
+
+    - name: Validate dnode_count
+      ansible.builtin.assert:
+        that:
+          - final_dnode_count | int <= cluster_nodes | length
+          - final_dnode_count | int > 0
+        fail_msg: "dnode_count must be between 1 and {{ cluster_nodes | length }}"
+        success_msg: "Valid dnode_count: {{ final_dnode_count }}"
+      run_once: true
+      when:
+        - dnode_count is defined
+
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Ensure all cluster nodes are in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^{{ hostvars[inventory_host].ansible_host }}\s+'
+        line: "{{ hostvars[inventory_host].ansible_host }} {{ inventory_host }}"
+        state: present
+      loop: "{{ groups['tdengine_servers'] }}"
+      loop_control:
+        loop_var: inventory_host
+      when: inventory_host in hostvars
+
+    - name: Set pkg_arch
+      set_fact:
+        pkg_arch: >-
+          {% if ansible_machine == 'x86_64' %}x64
+          {% elif ansible_machine == 'aarch64' %}arm64
+          {% else %}{{ ansible_machine }}{% endif %}
+
+    - name: Set pkg_os
+      set_fact:
+        pkg_os: >-
+          {% if ansible_system == 'Linux' %}Linux
+          {% elif ansible_system == 'Darwin' %}macOS
+          {% elif ansible_system == 'Windows' %}Windows
+          {% else %}{{ ansible_system }}{% endif %}
+      run_once: true
+
+    - name: Set pkg_name
+      set_fact:
+        pkg_name: >-
+          {% if edition == 'enterprise' %}
+            TDengine-enterprise-{{ tdengine_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
+          {% else %}
+            TDengine-server-{{ tdengine_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
+          {% endif %}
+      run_once: true
+
+    - name: Clean blank in pkg_name
+      set_fact:
+        pkg_name: "{{ pkg_name | regex_replace('\\s+', '') }}"
+      run_once: true
+
+    - name: Add firstEp
+      set_fact:
+        taos_config: "{{ taos_config | combine({'firstEp': groups['tdengine_servers'][0] ~ ':' ~ taos_config.serverPort}) }}"
+      run_once: true
+
+    - name: Check if package already exists
+      ansible.builtin.stat:
+        path: "{{ tar_filepath }}/{{ pkg_name }}"
+      register: pkg_check
+
+    # Prepare env
+    - name: Create temporary directory
+      ansible.builtin.file:
+        path: "{{ tar_filepath }}"
+        state: directory
+        mode: "0755"
+      when: not pkg_check.stat.exists
+
+    - name: Download TDengine package
+      ansible.builtin.get_url:
+        url: "{{ public_dl_url }}/{{ pkg_name }}"
+        dest: "{{ tar_filepath }}/{{ pkg_name }}"
+        timeout: 30
+      when: not pkg_check.stat.exists
+      register: public_download
+      retries: 3
+      delay: 5
+
+    # Installation Process
+    - name: Extract package
+      ansible.builtin.unarchive:
+        src: "{{ tar_filepath }}/{{ pkg_name }}"
+        dest: "{{ tar_filepath }}"
+        remote_src: true
+
+    - name: Run install script with shell module
+      ansible.builtin.shell: "{{ tar_filepath }}/TDengine-{{ edition }}-{{ tdengine_version }}/install.sh -e no"
+      args:
+        chdir: "{{ tar_filepath }}/TDengine-{{ edition }}-{{ tdengine_version }}"  # 确保在正确目录执行
+      register: install_result
+      changed_when: "'successfully' in install_result.stdout"
+
+    - name: Update taos.cfg parameters
+      ansible.builtin.lineinfile:
+        path: "{{ config_dir }}/taos.cfg"
+        regexp: '^#{0,}\s*{{ item.key }}\s*'
+        line: "{{ item.key }}                  {{ item.value }}"
+        insertafter: EOF
+        backrefs: yes
+      loop: "{{ taos_config | dict2items }}"
+
+    - name: Clean data directory
+      ansible.builtin.file:
+        path: "{{ dataDir }}"
+        state: absent
+      when: clean_data_dir | default(false)
+
+    - name: Clean log directory
+      ansible.builtin.file:
+        path: "{{ logDir }}"
+        state: absent
+      when: clean_log_dir | default(false)
+
+    # service management
+    - name: Start services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop: "{{ enterprise_services if edition == 'enterprise' else community_services }}"
+      register: service_status
+      retries: 3
+      delay: 10
+
+    - name: Get existing dnodes
+      ansible.builtin.shell: "taos -s 'SHOW DNODES' | awk 'NR>1 {print $2}'"
+      register: dnode_list
+      changed_when: false
+      run_once: true
+
+    - name: Add cluster nodes on firstEp node
+      ansible.builtin.command: "taos -s 'CREATE DNODE \"{{ item }}:{{ taos_config.serverPort }}\"'"
+      loop: "{{ cluster_nodes[0: (final_dnode_count | default(1) | int)] if (final_dnode_count | int) > 0 else [] }}"
+      when:
+        - inventory_hostname == taos_config.firstEp.split(':')[0]  # Only in first dnode
+        - item not in dnode_list.stdout_lines
+        - (final_dnode_count | int) > 0
+
+    - name: Get precise DNodes status
+      shell: |
+        taos -s 'SHOW DNODES' | awk '/\\| [0-9]+ \\|.*6030.*ready/ {count++} END {print count+0}'
+      args:
+        executable: /bin/bash
+      register: cluster_status
+      when:
+        - inventory_hostname == taos_config.firstEp.split(':')[0]
+
+    - name: Validate DNodes count
+      ansible.builtin.assert:
+        that:
+          - cluster_status.stdout | int == final_dnode_count | int
+        fail_msg: "Cluster has {{ cluster_status.stdout_lines | int }} ready nodes, expected {{ final_dnode_count }}"
+      when:
+        - inventory_hostname == taos_config.firstEp.split(':')[0]
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg: |
+          Deployment Summary:
+          - Edition: {{ edition }}
+          - Version: {{ tdengine_version }}
+          - First EP: {{ taos_config.firstEp }}
+          - Cluster Nodes: {{ cluster_nodes }}
+      run_once: true
+
+  handlers:
+    - name: Restart taosd
+      ansible.builtin.systemd:
+        name: taosd
+        state: restarted
+        enabled: yes
+      listen: "restart tdengine services"
+
+

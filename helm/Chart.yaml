@@ -1,6 +1,6 @@
 apiVersion: v2
-name: tdengine-idp
-description: A Helm chart for deploying TDengine Industrial Data Platform
+name: tdengine-idmp
+description: A Helm chart for deploying TDengine Industrial Data Management Platform
 type: application
 version: 0.1.0
 appVersion: "latest"

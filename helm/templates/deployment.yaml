@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "tdengine-idp.fullname" . }}
+  name: {{ include "tdengine-idmp.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ include "tdengine-idp.name" . }}
+    app.kubernetes.io/name: {{ include "tdengine-idmp.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "tdengine-idp.name" . }}
+      app.kubernetes.io/name: {{ include "tdengine-idmp.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "tdengine-idp.name" . }}
+        app.kubernetes.io/name: {{ include "tdengine-idmp.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
-        - name: tdengine-idp
+        - name: tdengine-idmp
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -32,7 +32,7 @@ spec:
         - name: data
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "tdengine-idp.fullname" . }}-data
+            claimName: {{ include "tdengine-idmp.fullname" . }}-data
           {{- else }}
           emptyDir: {}
           {{- end }}
