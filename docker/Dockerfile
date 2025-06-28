@@ -28,13 +28,13 @@ ENV TZ=Asia/Shanghai \
 RUN groupadd -r tdengine --gid=101 \
     && useradd -r -g tdengine --uid=101 --home-dir=/home/tdengine --shell=/bin/bash tdengine
 
-RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-idp-enterprise-linux.tar.gz \
-    && tar -xzf /tmp/tdengine-idp-enterprise-linux.tar.gz -C /tmp \
-    && rm -f /tmp/tdengine-idp-enterprise-linux.tar.gz \
-    && cd /tmp/tdengine-idp-enterprise-* \
+RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-idmp-enterprise-linux.tar.gz \
+    && tar -xzf /tmp/tdengine-idmp-enterprise-linux.tar.gz -C /tmp \
+    && rm -f /tmp/tdengine-idmp-enterprise-linux.tar.gz \
+    && cd /tmp/tdengine-idmp-enterprise-* \
     && ./install.sh -s -n \
     && rm -rf /tmp/* \
-    && chown -R tdengine:tdengine /usr/local/taos/idp
+    && chown -R tdengine:tdengine /usr/local/taos/idmp
 
 COPY entrypoint.sh /entrypoint.sh
 

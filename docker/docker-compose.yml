@@ -17,9 +17,9 @@ services:
     networks:
       - taos_net
 
-  tdengine-idp:
-    image: tdengine/tdengine-idp:latest
-    container_name: tdengine-idp
+  tdengine-idmp:
+    image: tdengine/tdengine-idmp:latest
+    container_name: tdengine-idmp
     restart: always
     depends_on:
       - tdengine

@@ -1,8 +1,8 @@
-# Deploy TDengine IDP with Ansible
+# Deploy TDengine IDMP with Ansible
 
 English | [简体中文](README-CN.md)
 
-This project provides an Ansible-based automation tool to simplify the deployment of TDengine IDP. With this tool, you can easily install and configure TDengine IDP across multiple servers.
+This project provides an Ansible-based automation tool to simplify the deployment of TDengine IDMP. With this tool, you can easily install and configure TDengine IDMP across multiple servers.
 
 ## Ansible Introduction
 
@@ -15,7 +15,7 @@ Ansible is an open-source automation tool for configuration management, applicat
 
 For Ansible installation and usage, please refer to the [Ansible Official Documentation](https://docs.ansible.com/ansible/latest/getting_started/index.html)
 
-## TDengine IDP Deployment Steps
+## TDengine IDMP Deployment Steps
 
 > **NOTE:**
 > This deployment solution uses `ansible-vault` to manage sensitive information, ensuring passwords and other sensitive data are securely stored in version control.
@@ -40,16 +40,16 @@ In this file, you need to configure the username and password information for al
 
 ### 3. Execute Deployment
 
-Run the following command to start deploy TDengine IDP:
+Run the following command to start deploy TDengine IDMP:
 
 ```bash
-ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass
+ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass
 ```
 
-Or run the following command to start deploy TDengine TSDB and TDengine IDP:
+Or run the following command to start deploy TDengine TSDB and TDengine IDMP:
 
 ```bash
-ansible-playbook playbooks/tdengine-idp.yml --ask-vault-pass -e deploy_tdengine=true
+ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e deploy_tdengine=true
 ```
 
 When prompted for `Vault password`, enter: `taosdata`

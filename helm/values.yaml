@@ -1,11 +1,11 @@
 # values.yaml
 
-# Number of tdengine-idp replicas
+# Number of tdengine-idmp replicas
 replicaCount: 1
 
 image:
   # Docker image repository
-  repository: tdengine/tdengine-idp
+  repository: tdengine/tdengine-idmp
   # Docker image tag
   tag: latest
   # Image pull policy (IfNotPresent/Always/Never)
@@ -14,10 +14,10 @@ image:
 service:
   # Kubernetes Service type (ClusterIP/NodePort/LoadBalancer)
   type: ClusterIP
-  # Service port for tdengine-idp
+  # Service port for tdengine-idmp
   port: 6042
 
-# Resource requests and limits for the tdengine-idp container
+# Resource requests and limits for the tdengine-idmp container
 resources: {}
 
 persistence:
