@@ -14,7 +14,7 @@
     tdengine_version: "3.3.6.0"
     tdengine_major_version: "{{ tdengine_version.split('.')[:2] | join('.') }}"
 
-    public_dl_url: "https://www.taosdata.com/assets-download/3.0"
+    public_dl_url: "https://www.tdengine.com/downloads/{{ 'enterprise' if edition == 'enterprise' else 'community' }}/{{ tdengine_version }}"
     pkg_name: "TDengine-{{ tdengine_version }}-{{ 'enterprise' if edition == 'enterprise' else 'community' }}-Linux-x64.tar.gz"
 
     # Cluster config
