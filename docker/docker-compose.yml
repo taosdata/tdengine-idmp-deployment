@@ -1,15 +1,12 @@
 services:
-  tdengine:
-    image: tdengine/tdengine-ee-amd64:latest
-    container_name: tdengine
+  tdengine-tsdb:
+    image: tdengine/tdengine-ee:latest
+    container_name: tdengine-tsdb
     hostname: tdengine
     restart: always
     ports:
       - "6030:6030"
       - "6041:6041"
-      - "6043:6043"
-      - "6044-6049:6044-6049"
-      - "6044-6045:6044-6045/udp"
       - "6060:6060"
     volumes:
       - tdengine_data:/var/lib/taos
@@ -22,13 +19,14 @@ services:
     container_name: tdengine-idmp
     restart: always
     depends_on:
-      - tdengine
+      - tdengine-tsdb
     ports:
       - "6042:6042"
+    volumes:
+      - tdengine_data:/var/lib/taos
+      - tdengine_log:/var/log/taos
     networks:
       - taos_net
-    volumes:
-      - tda_data:/app/data
 
 networks:
   taos_net:
@@ -38,6 +36,4 @@ volumes:
   tdengine_data:
     driver: local
   tdengine_log:
-    driver: local
-  tda_data:
     driver: local
