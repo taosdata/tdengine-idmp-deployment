@@ -1,14 +1,12 @@
 [tdengine_idmp_servers]
-idmp_server1 ansible_host=192.168.1.*
-idmp_server2 ansible_host=192.168.2.*
+idmp-server1 ansible_host=192.168.1.*
 
 [tdengine_idmp_servers:vars]
 ansible_user={{ ansible_ssh_user }}
 ansible_ssh_pass={{ vault_ssh_password }}
 
 [tdengine_servers]
-tsdb_server1 ansible_host=192.168.1.*
-tsdb_server2 ansible_host=192.168.2.*
+tsdb-server1 ansible_host=192.168.1.*
 
 [tdengine_servers:vars]
 ansible_user={{ ansible_ssh_user }}
