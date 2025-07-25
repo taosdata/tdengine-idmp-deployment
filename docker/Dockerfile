@@ -34,7 +34,9 @@ RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-idmp-e
     && cd /tmp/tdengine-idmp-enterprise-* \
     && ./install.sh -s -n \
     && rm -rf /tmp/* \
-    && chown -R tdengine:tdengine /usr/local/taos/idmp
+    && chown -R tdengine:tdengine /usr/local/taos/idmp \
+    && chown -R tdengine:tdengine /var/log/taos \
+    && chown -R tdengine:tdengine /var/lib/taos
 
 COPY entrypoint.sh /entrypoint.sh
 
