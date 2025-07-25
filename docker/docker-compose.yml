@@ -22,6 +22,7 @@ services:
       - tdengine-tsdb
     ports:
       - "6042:6042"
+      - "8082:8082"
     volumes:
       - tdengine_data:/var/lib/taos
       - tdengine_log:/var/log/taos
