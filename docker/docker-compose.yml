@@ -4,6 +4,8 @@ services:
     container_name: tdengine-tsdb
     hostname: tdengine
     restart: always
+    environment:
+      TZ: "${TZ:-UTC}"
     ports:
       - "6030:6030"
       - "6041:6041"
@@ -20,6 +22,9 @@ services:
     restart: always
     depends_on:
       - tdengine-tsdb
+    environment:
+      TZ: "${TZ:-UTC}"
+      TSDB_URL: "http://tdengine-tsdb:6041"
     ports:
       - "6042:6042"
       - "8082:8082"
