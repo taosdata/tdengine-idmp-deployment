@@ -28,7 +28,7 @@ TDengine IDMP docker
 ```bash
 docker build \
   -t tdengine/tdengine-idmp:<version> \
-  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp/enterprise/<version>/tdengine-idmp-enterprise-<version>-linux.tar.gz" .
+  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp-enterprise/<version>/tdengine-idmp-enterprise-<version>-linux-generic.tar.gz" .
 docker tag tdengine/tdengine-idmp:<version> tdengine/tdengine-idmp:latest
 ```
 
