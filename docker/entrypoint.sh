@@ -10,7 +10,7 @@ fi
 if [ -n "$TSDB_URL" ]; then
   echo "TSDB_URL is set to $TSDB_URL"
   ESCAPED_URL=$(echo "$TSDB_URL" | sed 's/[\/&]/\\&/g')
-  sed -i "s|url: http://localhost:6041|url: $ESCAPED_URL|" /usr/local/taos/idmp/config/application.yml
+  sed -i "s|url:[[:space:]]*http://localhost:6041|url: $ESCAPED_URL|" /usr/local/taos/idmp/config/application.yml
 fi
 
 # necessary to make sure generator works
