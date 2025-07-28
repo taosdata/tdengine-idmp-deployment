@@ -16,6 +16,9 @@ RUN apt-get update \
         fontconfig \
         locales \
         tzdata \
+        procps \
+        htop \
+        curl \
     && ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone \
     && locale-gen en_US.UTF-8 \
@@ -37,6 +40,11 @@ RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-idmp-e
     && chown -R tdengine:tdengine /usr/local/taos/idmp \
     && chown -R tdengine:tdengine /var/log/taos \
     && chown -R tdengine:tdengine /var/lib/taos
+
+RUN mkdir -p /opt/arthas && \
+    curl -L -o /opt/arthas/arthas-boot.jar https://arthas.aliyun.com/arthas-boot.jar && \
+    echo '#!/bin/sh\njava -jar /opt/arthas/arthas-boot.jar "$@"' > /usr/local/bin/arthas && \
+    chmod +x /usr/local/bin/arthas
 
 COPY entrypoint.sh /entrypoint.sh
 
