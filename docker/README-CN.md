@@ -8,10 +8,13 @@
 
 ```
 TDengine IDMP docker
-│── Dockerfile           # 构建 TDengine IDMP Docker 镜像的指令文件
-│── entrypoint.sh        # TDengine IDMP 应用程序的初始化脚本
-│── docker-compose.yml   # 使用 Docker Compose 部署 TDengine IDMP 的配置文件
-└── README.md            # 项目文档
+│── Dockerfile                # 构建 TDengine IDMP Docker 镜像的指令文件
+│── entrypoint.sh             # TDengine IDMP 应用程序的初始化脚本
+│── docker-compose.yml        # 标准部署配置文件（TSDB + IDMP）
+│── docker-compose-tdgpt.yml  # 完整部署配置文件（TSDB + IDMP + TDgpt）
+│── init-anode.sql            # TDengine anode 初始化脚本
+│── README.md                 # 英文项目文档
+└── README-CN.md              # 中文项目文档
 ```
 
 ## 前置条件
@@ -27,25 +30,80 @@ TDengine IDMP docker
 
 ```bash
 docker build \
-  -t tdengine/tdengine-idmp:<version> \
-  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp/enterprise/<version>/tdengine-idmp-enterprise-<version>-linux.tar.gz" .
-docker tag tdengine/tdengine-idmp:<version> tdengine/tdengine-idmp:latest
+  -t tdengine/idmp-ee:<version> \
+  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp-enterprise/<version>/tdengine-idmp-enterprise-<version>-linux-generic.tar.gz" .
+docker tag tdengine/idmp-ee:<version> tdengine/idmp-ee:latest
 ```
 
-## 运行 Docker 容器
+## 部署方式
 
-构建镜像后，您可以使用 Docker Compose 运行 TDengine IDMP 应用程序。执行以下命令：
+本项目提供两种部署方式：
+
+### 方式一：标准部署（推荐用于开发环境）
+
+仅包含 TDengine TSDB 和 IDMP 服务，不包含 AI 功能：
 
 ```bash
-docker compose -f docker-compose.yml up -d
+# 启动标准服务
+docker compose up -d
+
+# 停止服务
+docker compose down
 ```
 
-此命令将启动 TDengine IDMP 应用程序及其定义的所有依赖项。
+**服务端口：**
+- **6030**: TDengine 客户端连接端口
+- **6041**: TDengine REST API 端口
+- **6060**: TDengine 管理系统前端端口
+- **6042**: IDMP Web 前端端口
+- **8082**: IDMP h2  服务端口
 
-## 停止应用程序
+### 方式二：完整部署（包含 AI 功能）
 
-要停止运行中的应用程序，您可以使用：
+包含完整的 TDengine 生态系统和 AI 分析能力：
 
 ```bash
-docker compose -f docker-compose.yml down
+# 启动完整服务
+docker compose -f docker-compose-tdgpt.yml up -d
+
+# 停止服务
+docker compose -f docker-compose-tdgpt.yml down
 ```
+
+**额外端口：**
+- **6090**: TDgpt 主服务端口
+- **5000**: 模型服务端口
+- **5001**: 扩展模型服务端口
+
+**服务启动顺序：**
+1. **TDgpt 服务**: 优先启动，提供 AI 分析能力
+2. **TDengine TSDB**: 等待 TDgpt 健康检查通过后启动，自动创建 anode 连接
+3. **IDMP 服务**: 最后启动，依赖 TSDB 服务正常运行
+
+## 健康检查
+
+所有服务都配置了健康检查机制，确保服务按正确顺序启动：
+- **TDgpt**: 检查 6090 端口可用性
+- **TSDB**: 检查数据库连接状态
+- **IDMP**: 检查 6042 端口可用性
+
+## 镜像配置
+
+### TDgpt 镜像版本
+
+如需使用完整版 TDgpt 镜像，可修改 `docker-compose-tdgpt.yml` 中的镜像配置：
+
+```yaml
+services:
+  tdengine-tdgpt:
+    image: tdengine/tdgpt-full:latest  # 完整版镜像
+    # 或
+    image: tdengine/tdgpt:latest       # 标准版镜像
+```
+
+## 使用建议
+
+- **开发环境**: 使用标准 `docker-compose.yml` 即可满足基本需求
+- **需要 AI 功能**: 使用 `docker-compose-tdgpt.yml` 获得完整功能
+- **生产环境**: 根据实际业务需求选择对应的配置文件
+

@@ -1,7 +1,8 @@
 ---
-# Deploys and start TDengine (Community/Enterprise Edition)
+# Deploys and start TDengine (Oss/Enterprise Edition)
 # Run command:
-# ansible-playbook playbooks/tdengine.yml -e "edition=enterprise first_ep=node1:6030"
+# ansible-playbook playbooks/tdengine.yml -e "edition=enterprise" --ask-vault-pass
+#  Eg: ansible-playbook playbooks/tdengine.yml -e "edition=enterprise tdengine_version=3.3.7.0" --ask-vault-pass
 
 - name: Deploy TDengine application
   hosts: tdengine_servers
@@ -10,12 +11,12 @@
     - ../inventory/group_vars/public.yml
   become: true
   vars:
-    edition: "enterprise"  # community/enterprise
-    tdengine_version: "3.3.6.0"
+    edition: "enterprise"  # oss/enterprise
+    tdengine_version: "3.3.7.0"
     tdengine_major_version: "{{ tdengine_version.split('.')[:2] | join('.') }}"
 
-    public_dl_url: "https://www.tdengine.com/downloads/{{ 'enterprise' if edition == 'enterprise' else 'community' }}/{{ tdengine_version }}"
-    pkg_name: "TDengine-{{ tdengine_version }}-{{ 'enterprise' if edition == 'enterprise' else 'community' }}-Linux-x64.tar.gz"
+    public_dl_url: "https://www.tdengine.com/downloads/{{ 'enterprise' if edition == 'enterprise' else 'oss' }}/{{ tdengine_version }}"
+    pkg_name: "TDengine-tsdb-{{ 'enterprise' if edition == 'enterprise' else 'oss' }}-{{ tdengine_version }}-linux-x64.tar.gz"
 
     # Cluster config
     cluster_nodes: "{{ groups['tdengine_servers'] }}"
@@ -31,7 +32,7 @@
     # taos config
     taos_config:
       serverPort: "6030"
-      fqdn: "{{ ansible_hostname }}"
+      fqdn: "{{ inventory_hostname }}"
       dataDir: "/var/lib/taos"
       logDir: "/var/log/taos"
       debugFlag: 131
@@ -75,6 +76,7 @@
     - name: Set hostname
       ansible.builtin.hostname:
         name: "{{ inventory_hostname }}"
+      ignore_errors: true
 
     - name: Ensure all cluster nodes are in /etc/hosts
       ansible.builtin.lineinfile:
@@ -97,7 +99,7 @@
     - name: Set pkg_os
       set_fact:
         pkg_os: >-
-          {% if ansible_system == 'Linux' %}Linux
+          {% if ansible_system == 'Linux' %}linux
           {% elif ansible_system == 'Darwin' %}macOS
           {% elif ansible_system == 'Windows' %}Windows
           {% else %}{{ ansible_system }}{% endif %}
@@ -107,9 +109,9 @@
       set_fact:
         pkg_name: >-
           {% if edition == 'enterprise' %}
-            TDengine-enterprise-{{ tdengine_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
+            tdengine-tsdb-enterprise-{{ tdengine_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
           {% else %}
-            TDengine-server-{{ tdengine_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
+            tdengine-tsdb-oss-{{ tdengine_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
           {% endif %}
       run_once: true
 
@@ -154,11 +156,11 @@
         remote_src: true
 
     - name: Run install script with shell module
-      ansible.builtin.shell: "{{ tar_filepath }}/TDengine-{{ edition }}-{{ tdengine_version }}/install.sh -e no"
+      ansible.builtin.shell: "{{ tar_filepath }}/tdengine-tsdb-{{ edition }}-{{ tdengine_version }}/install.sh -e no"
       args:
-        chdir: "{{ tar_filepath }}/TDengine-{{ edition }}-{{ tdengine_version }}"  # 确保在正确目录执行
+        chdir: "{{ tar_filepath }}/tdengine-tsdb-{{ edition }}-{{ tdengine_version }}"  # 确保在正确目录执行
       register: install_result
-      changed_when: "'successfully' in install_result.stdout"
+      changed_when: install_result.stdout is defined and 'successfully' in install_result.stdout
 
     - name: Update taos.cfg parameters
       ansible.builtin.lineinfile:
@@ -191,6 +193,13 @@
       register: service_status
       retries: 3
       delay: 10
+
+    - name: Wait for TDengine service to be ready
+      ansible.builtin.wait_for:
+        port: "{{ taos_config.serverPort }}"
+        host: "{{ ansible_default_ipv4.address }}"
+        timeout: 60
+        delay: 10
 
     - name: Get existing dnodes
       ansible.builtin.shell: "taos -s 'SHOW DNODES' | awk 'NR>1 {print $2}'"

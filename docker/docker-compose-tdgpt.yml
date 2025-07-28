@@ -1,4 +1,24 @@
 services:
+  tdengine-tdgpt:
+    image: tdengine/tdgpt:latest
+    container_name: tdengine-tdgpt
+    hostname: tdengine-tdgpt
+    restart: always
+    environment:
+      TZ: "${TZ:-UTC}"
+    ports:
+      - "6090:6090"
+      - "5000:5000"
+      - "5001:5001"
+    networks:
+      - taos_net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6090').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   tdengine-tsdb:
     image: tdengine/tsdb-ee:latest
     container_name: tdengine-tsdb
@@ -13,8 +33,12 @@ services:
     volumes:
       - tdengine_data:/var/lib/taos
       - tdengine_log:/var/log/taos
+      - ./init-anode.sql:/docker-entrypoint-initdb.d/init-anode.sql
     networks:
       - taos_net
+    depends_on:
+      tdengine-tdgpt:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "taos", "-h", "localhost", "-s", "show databases;"]
       interval: 30s
