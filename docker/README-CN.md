@@ -58,7 +58,7 @@ docker compose down
 - **6042**: IDMP Web 前端端口
 - **8082**: IDMP h2  服务端口
 
-### 方式二：TDgpt 完整部署（包含 AI 功能）
+### 方式二：完整部署（包含 AI 功能）
 
 包含完整的 TDengine 生态系统和 AI 分析能力：
 

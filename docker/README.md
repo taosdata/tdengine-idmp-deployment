@@ -58,7 +58,7 @@ docker compose down
 - **6042**: IDMP Web frontend port
 - **8082**: IDMP h2 service port
 
-### Option 2: TDgpt Complete Deployment (With AI Features)
+### Option 2: Complete Deployment (With AI Features)
 
 Includes the complete TDengine ecosystem and AI analysis capabilities:
 
