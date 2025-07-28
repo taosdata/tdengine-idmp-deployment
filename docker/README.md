@@ -30,9 +30,9 @@ To build the TDengine IDMP Docker image, navigate to the project directory and r
 
 ```bash
 docker build \
-  -t tdengine/tdengine-idmp:<version> \
+  -t tdengine/idmp-ee:<version> \
   --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp-enterprise/<version>/tdengine-idmp-enterprise-<version>-linux-generic.tar.gz" .
-docker tag tdengine/tdengine-idmp:<version> tdengine/tdengine-idmp:latest
+docker tag tdengine/idmp-ee:<version> tdengine/idmp-ee:latest
 ```
 
 ## Deployment Options
@@ -96,9 +96,9 @@ To use the full version TDgpt image, modify the image configuration in `docker-c
 ```yaml
 services:
   tdengine-tdgpt:
-    image: tdengine/tdengine-tdgpt-full:latest  # Full version image
+    image: tdengine/tdgpt-full:latest  # Full version image
     # or
-    image: tdengine/tdengine-tdgpt:latest       # Standard version image
+    image: tdengine/tdgpt:latest       # Standard version image
 ```
 
 ## Usage Recommendations

@@ -30,9 +30,9 @@ TDengine IDMP docker
 
 ```bash
 docker build \
-  -t tdengine/tdengine-idmp:<version> \
+  -t tdengine/idmp-ee:<version> \
   --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp-enterprise/<version>/tdengine-idmp-enterprise-<version>-linux-generic.tar.gz" .
-docker tag tdengine/tdengine-idmp:<version> tdengine/tdengine-idmp:latest
+docker tag tdengine/idmp-ee:<version> tdengine/idmp-ee:latest
 ```
 
 ## 部署方式
@@ -96,9 +96,9 @@ docker compose -f docker-compose-tdgpt.yml down
 ```yaml
 services:
   tdengine-tdgpt:
-    image: tdengine/tdengine-tdgpt-full:latest  # 完整版镜像
+    image: tdengine/tdgpt-full:latest  # 完整版镜像
     # 或
-    image: tdengine/tdengine-tdgpt:latest       # 标准版镜像
+    image: tdengine/tdgpt:latest       # 标准版镜像
 ```
 
 ## 使用建议
