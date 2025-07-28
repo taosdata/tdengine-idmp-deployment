@@ -11,7 +11,7 @@ TDengine IDMP docker
 │── Dockerfile                # Instructions to build the TDengine IDMP Docker image
 │── entrypoint.sh             # Script to initialize the TDengine IDMP application
 │── docker-compose.yml        # Standard deployment configuration (TSDB + IDMP)
-│── docker-compose-tdgpt.yml  # TDgpt complete deployment configuration (TSDB + IDMP + TDgpt)
+│── docker-compose-tdgpt.yml  # Full deployment configuration (TSDB + IDMP + TDgpt)
 │── init-anode.sql            # TDengine anode initialization script
 │── README.md                 # English project documentation
 └── README-CN.md              # Chinese project documentation
@@ -58,7 +58,7 @@ docker compose down
 - **6042**: IDMP Web frontend port
 - **8082**: IDMP h2 service port
 
-### Option 2: Complete Deployment (With AI Features)
+### Option 2: Full Deployment (With AI Features)
 
 Includes the complete TDengine ecosystem and AI analysis capabilities:
 

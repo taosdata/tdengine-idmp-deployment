@@ -11,7 +11,7 @@ TDengine IDMP docker
 │── Dockerfile                # 构建 TDengine IDMP Docker 镜像的指令文件
 │── entrypoint.sh             # TDengine IDMP 应用程序的初始化脚本
 │── docker-compose.yml        # 标准部署配置文件（TSDB + IDMP）
-│── docker-compose-tdgpt.yml  # TDgpt 完整部署配置文件（TSDB + IDMP + TDgpt）
+│── docker-compose-tdgpt.yml  # 完整部署配置文件（TSDB + IDMP + TDgpt）
 │── init-anode.sql            # TDengine anode 初始化脚本
 │── README.md                 # 英文项目文档
 └── README-CN.md              # 中文项目文档
