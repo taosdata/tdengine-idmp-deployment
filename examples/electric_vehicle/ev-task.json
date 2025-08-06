@@ -1,0 +1,232 @@
+{
+  "server_version": "3.3.7.0",
+  "version": "1.11.0",
+  "commit": "1769bad58b1ca79a1aaacc2cf9f7652460474b6b",
+  "build": "linux-x86_64 2025-07-28 18:08:20 +08:00",
+  "cluster_id": "1320297281125025019",
+  "export_user": "root",
+  "export_time": "2025-08-05T05:43:29.370992388+00:00",
+  "tasks_num": 1,
+  "tasks": [
+    {
+      "id": 1,
+      "name": "ev",
+      "from": {
+        "type": "mqtt",
+        "data": {
+          "host": "ev-mqtt",
+          "port": 1883,
+          "endpoint": "ev-mqtt:1883",
+          "batch_size": "1000",
+          "batch_timeout": "500",
+          "busy_threshold": "100%",
+          "char_encoding": "UTF_8",
+          "clean_session": "true",
+          "client_id": "evcid",
+          "compression": "none",
+          "currentTab": "plain",
+          "health_check_window_in_second": "0s",
+          "keep_alive": "60",
+          "keep_raw_data": "false",
+          "max_errors_in_window": "10",
+          "max_queue_length": "1000",
+          "maximum_processing_batch": "100",
+          "persist_data_enable": "false",
+          "topic_pattern": "_/name",
+          "topics": "ev/+::0",
+          "tsl_verify": "none",
+          "unprocessed_messages_buffer_size": "50000",
+          "version": "5.0"
+        }
+      },
+      "to": "taos+http://root:taosdata@fractal:6041/ev",
+      "parser": {
+        "parser": {
+          "global": {
+            "cache": {
+              "max_size": "1GB",
+              "location": "",
+              "on_fail": "skip"
+            },
+            "archive": {
+              "keep_days": "30d",
+              "max_size": "1GB",
+              "location": "",
+              "on_fail": "rotate"
+            },
+            "database_connection_error": "cache",
+            "database_not_exist": "break",
+            "table_not_exist": "retry",
+            "primary_timestamp_overflow": "archive",
+            "primary_timestamp_null": "archive",
+            "primary_key_null": "archive",
+            "table_name_length_overflow": "archive",
+            "table_name_contains_illegal_char": {
+              "replace_to": ""
+            },
+            "variable_not_exist_in_table_name_template": {
+              "replace_to": ""
+            },
+            "field_name_not_found": "add_field",
+            "field_name_length_overflow": "archive",
+            "field_length_extend": true,
+            "field_length_overflow": "archive",
+            "ingesting_error": "archive",
+            "connection_timeout_in_second": "30s"
+          },
+          "parse": {
+            "payload": {
+              "json": ""
+            }
+          },
+          "model": {
+            "name": "${name}",
+            "using": "electric_vehicle",
+            "tags": [
+              "car_brand",
+              "location",
+              "plate",
+              "vin",
+              "battery_pack_capacity"
+            ],
+            "columns": [
+              "ts",
+              "acceletator_pedal_opening",
+              "air_cond_power",
+              "battery_current",
+              "battery_max_temperature",
+              "battery_min_temperature",
+              "battery_voltage",
+              "cell_max_voltage",
+              "cell_min_voltage",
+              "drive_motor_power",
+              "environment_temperature",
+              "soc",
+              "vehicle_speed"
+            ]
+          },
+          "mutate": [
+            {
+              "map": {
+                "ts": {
+                  "cast": "ts",
+                  "as": "TIMESTAMP(ms)"
+                },
+                "acceletator_pedal_opening": {
+                  "cast": "acceletator_pedal_opening",
+                  "as": "DOUBLE"
+                },
+                "air_cond_power": {
+                  "cast": "air_cond_power",
+                  "as": "DOUBLE"
+                },
+                "battery_current": {
+                  "cast": "battery_current",
+                  "as": "DOUBLE"
+                },
+                "battery_max_temperature": {
+                  "cast": "battery_max_temperature",
+                  "as": "DOUBLE"
+                },
+                "battery_min_temperature": {
+                  "cast": "battery_min_temperature",
+                  "as": "DOUBLE"
+                },
+                "battery_voltage": {
+                  "cast": "battery_voltage",
+                  "as": "DOUBLE"
+                },
+                "cell_max_voltage": {
+                  "cast": "cell_max_voltage",
+                  "as": "DOUBLE"
+                },
+                "cell_min_voltage": {
+                  "cast": "cell_min_voltage",
+                  "as": "DOUBLE"
+                },
+                "drive_motor_power": {
+                  "cast": "drive_motor_power",
+                  "as": "DOUBLE"
+                },
+                "environment_temperature": {
+                  "cast": "environment_temperature",
+                  "as": "DOUBLE"
+                },
+                "soc": {
+                  "cast": "soc",
+                  "as": "DOUBLE"
+                },
+                "vehicle_speed": {
+                  "cast": "vehicle_speed",
+                  "as": "DOUBLE"
+                },
+                "car_brand": {
+                  "cast": "car_brand",
+                  "as": "VARCHAR"
+                },
+                "location": {
+                  "cast": "location",
+                  "as": "VARCHAR"
+                },
+                "plate": {
+                  "cast": "plate",
+                  "as": "VARCHAR"
+                },
+                "vin": {
+                  "cast": "vin",
+                  "as": "VARCHAR"
+                },
+                "battery_pack_capacity": {
+                  "cast": "battery_pack_capacity",
+                  "as": "DOUBLE"
+                }
+              }
+            }
+          ]
+        },
+        "input": [
+          {
+            "topic": "topic",
+            "qos": "qos",
+            "payload": "{\"acceletator_pedal_opening\":0.2534956461865011,\"air_cond_power\":1.6477371141009285,\"battery_current\":70.16702466411587,\"battery_max_temperature\":36.00183060209655,\"battery_min_temperature\":35.0020690958338,\"battery_pack_capacity\":60.0,\"battery_voltage\":429.95748841246586,\"car_brand\":\"小鹏\",\"cell_max_voltage\":4.199235652899917,\"cell_min_voltage\":4.15,\"drive_motor_power\":12.129139507049883,\"environment_temperature\":31.033739728933934,\"location\":\"北京.海淀.中关村街道\",\"plate\":\"京AD01234\",\"soc\":0.9491537259511734,\"ts\":1751643796,\"vehicle_speed\":66.7423840567507,\"vin\":\"XL9C3456789012GHI\"}",
+            "name": "ev-16"
+          },
+          {
+            "topic": "topic",
+            "qos": "qos",
+            "payload": "{\"acceletator_pedal_opening\":0.3285579832771841,\"air_cond_power\":2.947501525282404,\"battery_current\":52.16411725753469,\"battery_max_temperature\":36.00037341665064,\"battery_min_temperature\":35.0,\"battery_pack_capacity\":50.0,\"battery_voltage\":429.9722411483703,\"car_brand\":\"问界\",\"cell_max_voltage\":4.2,\"cell_min_voltage\":4.149543888510692,\"drive_motor_power\":27.738856227800248,\"environment_temperature\":32.147067818911786,\"location\":\"北京.顺义.旺泉街道\",\"plate\":\"京AF89012\",\"soc\":0.95,\"ts\":1751643376,\"vehicle_speed\":66.44785866107827,\"vin\":\"XL7E5000056789012\"}",
+            "name": "ev-10"
+          },
+          {
+            "topic": "topic",
+            "qos": "qos",
+            "payload": "{\"acceletator_pedal_opening\":0.3043951781378813,\"air_cond_power\":1.1915238769657135,\"battery_current\":76.13901084890811,\"battery_max_temperature\":36.00183060209655,\"battery_min_temperature\":35.0020690958338,\"battery_pack_capacity\":60.0,\"battery_voltage\":429.95568454985255,\"car_brand\":\"小鹏\",\"cell_max_voltage\":4.199235652899917,\"cell_min_voltage\":4.15,\"drive_motor_power\":27.45614013205637,\"environment_temperature\":31.244349557013656,\"location\":\"北京.海淀.中关村街道\",\"plate\":\"京AD01234\",\"soc\":0.9491537259511734,\"ts\":1751643856,\"vehicle_speed\":66.55319404862182,\"vin\":\"XL9C3456789012GHI\"}",
+            "name": "ev-16"
+          },
+          {
+            "topic": "topic",
+            "qos": "qos",
+            "payload": "{\"acceletator_pedal_opening\":0.272016764931318,\"air_cond_power\":2.1307297559224088,\"battery_current\":46.665429887440084,\"battery_max_temperature\":36.0,\"battery_min_temperature\":35.00240207264727,\"battery_pack_capacity\":50.0,\"battery_voltage\":429.95292820536514,\"car_brand\":\"比亚迪\",\"cell_max_voltage\":4.1995746316703535,\"cell_min_voltage\":4.149772540042694,\"drive_motor_power\":23.335001871140115,\"environment_temperature\":32.00115548777366,\"location\":\"北京.朝阳.国贸街道\",\"plate\":\"京AD67890\",\"soc\":0.9498869764838481,\"ts\":1751643616,\"vehicle_speed\":69.53856573824831,\"vin\":\"5YJSA1E28HF234567\"}",
+            "name": "ev-12"
+          },
+          {
+            "topic": "topic",
+            "qos": "qos",
+            "payload": "{\"acceletator_pedal_opening\":0.34005797553363254,\"air_cond_power\":1.149170303112471,\"battery_current\":59.71067496086057,\"battery_max_temperature\":36.00183060209655,\"battery_min_temperature\":35.0020690958338,\"battery_pack_capacity\":60.0,\"battery_voltage\":429.9460952751849,\"car_brand\":\"小鹏\",\"cell_max_voltage\":4.199235652899917,\"cell_min_voltage\":4.15,\"drive_motor_power\":8.014999527929936,\"environment_temperature\":32.474700103362935,\"location\":\"北京.海淀.中关村街道\",\"plate\":\"京AD01234\",\"soc\":0.9491537259511734,\"ts\":1751643916,\"vehicle_speed\":67.89062669112234,\"vin\":\"XL9C3456789012GHI\"}",
+            "name": "ev-16"
+          }
+        ],
+        "format": {
+          "pageCount": 19,
+          "pageSize": 20,
+          "currentPage": 1
+        }
+      },
+      "via": null,
+      "jobs": 0,
+      "compression_level": null,
+      "oneshot_topic": null,
+      "created_at": "2025-08-04T02:05:18.592273686Z"
+    }
+  ]
+}
