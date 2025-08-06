@@ -39,7 +39,7 @@
           "version": "5.0"
         }
       },
-      "to": "taos+http://root:taosdata@fractal:6041/ev",
+      "to": "taos+http://root:taosdata@localhost:6041/ev",
       "parser": {
         "parser": {
           "global": {
