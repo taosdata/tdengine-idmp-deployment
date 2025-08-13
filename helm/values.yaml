@@ -5,7 +5,7 @@ replicaCount: 1
 
 image:
   # Docker image repository
-  repository: tdengine/tdengine-idmp
+  repository: tdengine/idmp-ee
   # Docker image tag
   tag: latest
   # Image pull policy (IfNotPresent/Always/Never)

@@ -2,14 +2,14 @@
 # Deploys and start TDengine IDMP.
 # Run command: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version>
 # Deploy TDengine IDMP and TDengine Enterprise Edition:
-# Run command: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version> -e deploy_tdengine=true -e tdengine_version=<tsdb_version>
-#  Eg: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=3.3.7.0 -e deploy_tdengine=true -e tdengine_version=1.0.0
+# Run command: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version> -e deploy_tdengine_tsdb=true -e tdengine_tsdb_version=<tsdb_version>
+#  Eg: ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=3.3.7.0 -e deploy_tdengine_tsdb=true -e tdengine_tsdb_version=1.0.0
 
-- import_playbook: tdengine.yml
+- import_playbook: tdengine-tsdb.yml
   vars:
     edition: enterprise
-    tdengine_version: "{{ tdengine_version }}"
-  when: deploy_tdengine is defined and deploy_tdengine
+    tdengine_tsdb_version: "{{ tdengine_tsdb_version }}"
+  when: deploy_tdengine_tsdb is defined and deploy_tdengine_tsdb
 
 - name: Deploy TDengine IDMP
   hosts: tdengine_idmp_servers

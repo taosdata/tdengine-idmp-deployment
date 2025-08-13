@@ -1,25 +1,25 @@
 ---
-# Deploys and start TDengine (Oss/Enterprise Edition)
+# Deploys and start TDengine TSDB (Oss/Enterprise Edition)
 # Run command:
 # ansible-playbook playbooks/tdengine.yml -e "edition=enterprise" --ask-vault-pass
-#  Eg: ansible-playbook playbooks/tdengine.yml -e "edition=enterprise tdengine_version=3.3.7.0" --ask-vault-pass
+#  Eg: ansible-playbook playbooks/tdengine.yml -e "edition=enterprise tdengine_tsdb_version=3.3.7.0" --ask-vault-pass
 
-- name: Deploy TDengine application
-  hosts: tdengine_servers
+- name: Deploy TDengine TSDB application
+  hosts: tdengine_tsdb_servers
   gather_facts: true
   vars_files:
     - ../inventory/group_vars/public.yml
   become: true
   vars:
     edition: "enterprise"  # oss/enterprise
-    tdengine_version: "3.3.7.0"
-    tdengine_major_version: "{{ tdengine_version.split('.')[:2] | join('.') }}"
+    tdengine_tsdb_version: "3.3.7.0"
+    tdengine_major_version: "{{ tdengine_tsdb_version.split('.')[:2] | join('.') }}"
 
-    public_dl_url: "https://www.tdengine.com/downloads/{{ 'enterprise' if edition == 'enterprise' else 'oss' }}/{{ tdengine_version }}"
-    pkg_name: "TDengine-tsdb-{{ 'enterprise' if edition == 'enterprise' else 'oss' }}-{{ tdengine_version }}-linux-x64.tar.gz"
+    public_dl_url: "https://downloads.tdengine.com/{{ 'tdengine-tsdb-enterprise' if edition == 'enterprise' else 'tdengine-tsdb-oss' }}/{{ tdengine_tsdb_version }}"
+    pkg_name: "TDengine-tsdb-{{ 'enterprise' if edition == 'enterprise' else 'oss' }}-{{ tdengine_tsdb_version }}-linux-x64.tar.gz"
 
     # Cluster config
-    cluster_nodes: "{{ groups['tdengine_servers'] }}"
+    cluster_nodes: "{{ groups['tdengine_tsdb_servers'] }}"
 
     # Create all nodes by default, otherwise take the user input value.
     # dnode_count: "{{ (cluster_nodes | length) if dnode_count is undefined else dnode_count | int }}"
@@ -84,7 +84,7 @@
         regexp: '^{{ hostvars[inventory_host].ansible_host }}\s+'
         line: "{{ hostvars[inventory_host].ansible_host }} {{ inventory_host }}"
         state: present
-      loop: "{{ groups['tdengine_servers'] }}"
+      loop: "{{ groups['tdengine_tsdb_servers'] }}"
       loop_control:
         loop_var: inventory_host
       when: inventory_host in hostvars
@@ -109,9 +109,9 @@
       set_fact:
         pkg_name: >-
           {% if edition == 'enterprise' %}
-            tdengine-tsdb-enterprise-{{ tdengine_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
+            tdengine-tsdb-enterprise-{{ tdengine_tsdb_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
           {% else %}
-            tdengine-tsdb-oss-{{ tdengine_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
+            tdengine-tsdb-oss-{{ tdengine_tsdb_version }}-{{ pkg_os }}-{{ pkg_arch }}.tar.gz
           {% endif %}
       run_once: true
 
@@ -122,7 +122,7 @@
 
     - name: Add firstEp
       set_fact:
-        taos_config: "{{ taos_config | combine({'firstEp': groups['tdengine_servers'][0] ~ ':' ~ taos_config.serverPort}) }}"
+        taos_config: "{{ taos_config | combine({'firstEp': groups['tdengine_tsdb_servers'][0] ~ ':' ~ taos_config.serverPort}) }}"
       run_once: true
 
     - name: Check if package already exists
@@ -156,9 +156,9 @@
         remote_src: true
 
     - name: Run install script with shell module
-      ansible.builtin.shell: "{{ tar_filepath }}/tdengine-tsdb-{{ edition }}-{{ tdengine_version }}/install.sh -e no"
+      ansible.builtin.shell: "{{ tar_filepath }}/tdengine-tsdb-{{ edition }}-{{ tdengine_tsdb_version }}/install.sh -e no"
       args:
-        chdir: "{{ tar_filepath }}/tdengine-tsdb-{{ edition }}-{{ tdengine_version }}"  # 确保在正确目录执行
+        chdir: "{{ tar_filepath }}/tdengine-tsdb-{{ edition }}-{{ tdengine_tsdb_version }}"  # 确保在正确目录执行
       register: install_result
       changed_when: install_result.stdout is defined and 'successfully' in install_result.stdout
 
@@ -237,7 +237,7 @@
         msg: |
           Deployment Summary:
           - Edition: {{ edition }}
-          - Version: {{ tdengine_version }}
+          - Version: {{ tdengine_tsdb_version }}
           - First EP: {{ taos_config.firstEp }}
           - Cluster Nodes: {{ cluster_nodes }}
       run_once: true

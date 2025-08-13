@@ -10,8 +10,8 @@
 TDengine IDMP docker
 │── Dockerfile                # 构建 TDengine IDMP Docker 镜像的指令文件
 │── entrypoint.sh             # TDengine IDMP 应用程序的初始化脚本
-│── docker-compose.yml        # 标准部署配置文件（TSDB + IDMP）
-│── docker-compose-tdgpt.yml  # 完整部署配置文件（TSDB + IDMP + TDgpt）
+│── docker-compose.yml        # 标准部署配置文件（TSDB Enterprise + IDMP）
+│── docker-compose-tdgpt.yml  # 完整部署配置文件（TSDB Enterprise + IDMP + TDgpt）
 │── init-anode.sql            # TDengine anode 初始化脚本
 │── README.md                 # 英文项目文档
 └── README-CN.md              # 中文项目文档
@@ -41,7 +41,7 @@ docker tag tdengine/idmp-ee:<version> tdengine/idmp-ee:latest
 
 ### 方式一：标准部署（推荐用于开发环境）
 
-仅包含 TDengine TSDB 和 IDMP 服务，不包含 AI 功能：
+仅包含 TDengine TSDB 企业版和 IDMP 服务，不包含 AI 功能：
 
 ```bash
 # 启动标准服务
@@ -52,9 +52,9 @@ docker compose down
 ```
 
 **服务端口：**
-- **6030**: TDengine 客户端连接端口
-- **6041**: TDengine REST API 端口
-- **6060**: TDengine 管理系统前端端口
+- **6030**: TDengine TSDB 企业版客户端连接端口
+- **6041**: TDengine TSDB 企业版REST API 端口
+- **6060**: TDengine TSDB 企业版管理系统前端端口
 - **6042**: IDMP Web 前端端口
 - **8082**: IDMP h2  服务端口
 
@@ -77,14 +77,14 @@ docker compose -f docker-compose-tdgpt.yml down
 
 **服务启动顺序：**
 1. **TDgpt 服务**: 优先启动，提供 AI 分析能力
-2. **TDengine TSDB**: 等待 TDgpt 健康检查通过后启动，自动创建 anode 连接
-3. **IDMP 服务**: 最后启动，依赖 TSDB 服务正常运行
+2. **TDengine TSDB Enterprise**: 等待 TDgpt 健康检查通过后启动，自动创建 anode 连接
+3. **IDMP 服务**: 最后启动，依赖 TSDB 企业版服务正常运行
 
 ## 健康检查
 
 所有服务都配置了健康检查机制，确保服务按正确顺序启动：
 - **TDgpt**: 检查 6090 端口可用性
-- **TSDB**: 检查数据库连接状态
+- **TSDB Enterprise**: 检查数据库连接状态
 - **IDMP**: 检查 6042 端口可用性
 
 ## 镜像配置

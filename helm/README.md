@@ -34,7 +34,7 @@ The following table lists the configurable parameters of the chart and their def
 | Parameter                  | Description                                 | Default                |
 |----------------------------|---------------------------------------------|------------------------|
 | `replicaCount`             | Number of replicas                          | `1`                    |
-| `image.repository`         | Image repository                            | `tdengine/tdengine-idmp`|
+| `image.repository`         | Image repository                            | `tdengine/idmp-ee`     |
 | `image.tag`                | Image tag                                   | `latest`               |
 | `image.pullPolicy`         | Image pull policy                           | `IfNotPresent`         |
 | `service.type`             | Kubernetes service type                     | `ClusterIP`            |
