@@ -10,8 +10,8 @@ This project provides a Dockerized version of the TDengine IDMP application. It 
 TDengine IDMP docker
 │── Dockerfile                # Instructions to build the TDengine IDMP Docker image
 │── entrypoint.sh             # Script to initialize the TDengine IDMP application
-│── docker-compose.yml        # Standard deployment configuration (TSDB + IDMP)
-│── docker-compose-tdgpt.yml  # Full deployment configuration (TSDB + IDMP + TDgpt)
+│── docker-compose.yml        # Standard deployment configuration (TSDB Enterprise + IDMP)
+│── docker-compose-tdgpt.yml  # Full deployment configuration (TSDB Enterprise + IDMP + TDgpt)
 │── init-anode.sql            # TDengine anode initialization script
 │── README.md                 # English project documentation
 └── README-CN.md              # Chinese project documentation
@@ -41,7 +41,7 @@ This project provides two deployment options:
 
 ### Option 1: Standard Deployment (Recommended for Development)
 
-Includes only TDengine TSDB and IDMP services, without AI functionality:
+Includes only TDengine TSDB Enterprise and IDMP services, without AI functionality:
 
 ```bash
 # Start standard services
@@ -52,9 +52,9 @@ docker compose down
 ```
 
 **Service Ports:**
-- **6030**: TDengine client connection port
-- **6041**: TDengine REST API port
-- **6060**: TDengine management system frontend port
+- **6030**: TDengine TSDB Enterprise client connection port
+- **6041**: TDengine TSDB Enterprise REST API port
+- **6060**: TDengine TSDB Enterprise management system frontend port
 - **6042**: IDMP Web frontend port
 - **8082**: IDMP h2 service port
 
@@ -77,14 +77,14 @@ docker compose -f docker-compose-tdgpt.yml down
 
 **Service Startup Order:**
 1. **TDgpt Service**: Starts first, providing AI analysis capabilities
-2. **TDengine TSDB**: Starts after TDgpt health check passes, automatically creates anode connection
-3. **IDMP Service**: Starts last, depends on TSDB service running normally
+2. **TDengine TSDB Enterprise**: Starts after TDgpt health check passes, automatically creates anode connection
+3. **IDMP Service**: Starts last, depends on TSDB Enterprise service running normally
 
 ## Health Checks
 
 All services are configured with health check mechanisms to ensure services start in the correct order:
 - **TDgpt**: Checks port 6090 availability
-- **TSDB**: Checks database connection status
+- **TSDB Enterprise**: Checks database connection status
 - **IDMP**: Checks port 6042 availability
 
 ## Image Configuration

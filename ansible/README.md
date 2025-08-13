@@ -48,10 +48,10 @@ Run the following command to start deploy TDengine IDMP:
 ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version>
 ```
 
-Or run the following command to start deploy TDengine TSDB and TDengine IDMP:
+Or run the following command to start deploy TDengine TSDB Enterprise and TDengine IDMP:
 
 ```bash
-ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version> -e deploy_tdengine=true -e tdengine_version=<tsdb_version>
+ansible-playbook playbooks/tdengine-idmp.yml --ask-vault-pass -e tdengine_idmp_version=<idmp_version> -e deploy_tdengine_tsdb=true -e tdengine_tsdb_version=<tsdb_version>
 ```
 
 When prompted for `Vault password`, enter: `taosdata`

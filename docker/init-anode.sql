@@ -1,2 +1,2 @@
--- Initialize TDengine anode for TDGPT service
+-- Initialize TDengine TSDB anode for TDGPT service
 create anode "tdengine-tdgpt:6090";

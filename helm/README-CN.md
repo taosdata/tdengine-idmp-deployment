@@ -34,7 +34,7 @@ helm uninstall tdengine-idmp
 | 参数                      | 描述                                       | 默认值                  |
 |--------------------------|-------------------------------------------|------------------------|
 | `replicaCount`           | 副本数量                                   | `1`                    |
-| `image.repository`       | 镜像仓库                                   | `tdengine/tdengine-idmp` |
+| `image.repository`       | 镜像仓库                                   | `tdengine/idmp-ee`     |
 | `image.tag`              | 镜像标签                                   | `latest`               |
 | `image.pullPolicy`       | 镜像拉取策略                               | `IfNotPresent`         |
 | `service.type`           | Kubernetes 服务类型                        | `ClusterIP`            |
