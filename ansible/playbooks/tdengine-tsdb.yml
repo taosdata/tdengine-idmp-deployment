@@ -15,7 +15,7 @@
     tdengine_tsdb_version: "3.3.7.0"
     tdengine_major_version: "{{ tdengine_tsdb_version.split('.')[:2] | join('.') }}"
 
-    public_dl_url: "https://www.tdengine.com/downloads/{{ 'enterprise' if edition == 'enterprise' else 'oss' }}/{{ tdengine_tsdb_version }}"
+    public_dl_url: "https://downloads.tdengine.com/{{ 'tdengine-tsdb-enterprise' if edition == 'enterprise' else 'tdengine-tsdb-oss' }}/{{ tdengine_tsdb_version }}"
     pkg_name: "TDengine-tsdb-{{ 'enterprise' if edition == 'enterprise' else 'oss' }}-{{ tdengine_tsdb_version }}-linux-x64.tar.gz"
 
     # Cluster config

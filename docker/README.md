@@ -31,7 +31,7 @@ To build the TDengine IDMP Docker image, navigate to the project directory and r
 ```bash
 docker build \
   -t tdengine/idmp-ee:<version> \
-  --build-arg DOWNLOAD_URL="https://downloads.taosdata.com/tdengine-idmp-enterprise/<version>/tdengine-idmp-enterprise-<version>-linux-generic.tar.gz" .
+  --build-arg DOWNLOAD_URL="https://downloads.tdengine.com/tdengine-idmp-enterprise/<version>/tdengine-idmp-enterprise-<version>-linux-generic.tar.gz" .
 docker tag tdengine/idmp-ee:<version> tdengine/idmp-ee:latest
 ```
 
