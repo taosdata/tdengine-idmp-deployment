@@ -7,9 +7,9 @@ services:
     environment:
       TZ: "${TZ:-UTC}"
     ports:
-      - "6090:6090"
-      - "5000:5000"
-      - "5001:5001"
+      - "6070:6090"
+      - "6071:5000"
+      - "6072:5001"
     networks:
       - taos_net
     healthcheck:
