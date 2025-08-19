@@ -20,13 +20,11 @@ jobs:
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
             docker compose -f docker-compose-tdgpt.yml up -d
-      - name: Set SSH KEY
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
+
       - name: Get Test Case Source Code
         run: |
-            git clone git@github.com:taosdata/TDasset.git
+            cd ~/TDasset
+            git checkout main && git pull
       - name: Run Playwright tests
         id: ui-test
         run: |
@@ -38,7 +36,7 @@ jobs:
                 echo "Waiting for service on port 6042..."
                 sleep 1
             done
-            cd TDasset/frontend
+            cd ~/TDasset/frontend
             pnpm i
             pnpm run test:e2e:install
             NODE_ENV=ci pnpm run test:e2e
