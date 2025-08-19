@@ -26,10 +26,12 @@ jobs:
         with:
           app_id: ${{ vars.TAOSDATA_BOT_ID }}
           private_key: ${{ secrets.TAOSDATA_BOT_KEY }}
-      - name: Pull with token
-        run: |
-            cd ~/TDasset
-            git pull https://${{ steps.app-token.outputs.token }}@github.com/taosdata/TDasset.git
+      - name: Checkout TDasset repository
+        uses: actions/checkout@v4
+        with:
+          repository: taosdata/TDasset
+          token: ${{ steps.app-token.outputs.token }}
+          path: TDasset
       - name: Run Playwright tests
         id: ui-test
         run: |
