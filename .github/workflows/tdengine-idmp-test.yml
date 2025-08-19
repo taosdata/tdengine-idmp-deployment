@@ -20,12 +20,10 @@ jobs:
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
             docker compose -f docker-compose-tdgpt.yml up -d
-      - name: Checkout TDasset repository
-        uses: actions/checkout@v4
-        with:
-          repository: taosdata/TDasset
-          token: ${{ secrets.GITHUB_TOKEN }}
-          path: ~/TDasset
+      - name: Pull with token
+        run: |
+            cd ~/TDasset
+            git pull https://${{ secrets.GITHUB_TOKEN }}@github.com/taosdata/TDasset.git
       - name: Run Playwright tests
         id: ui-test
         run: |
