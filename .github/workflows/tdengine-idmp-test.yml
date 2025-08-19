@@ -20,12 +20,6 @@ jobs:
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
             docker compose -f docker-compose-tdgpt.yml up -d
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: tibdex/github-app-token@v1
-        with:
-          app_id: ${{ vars.TAOSDATA_BOT_ID }}
-          private_key: ${{ secrets.TAOSDATA_BOT_KEY }}
 
       - name: Get Test Case Source Code
         run: |
