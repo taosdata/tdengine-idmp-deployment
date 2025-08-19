@@ -1,10 +1,12 @@
 name: Test::IDMP E2E Test
 
 on:
-  workflow_call:
+    workflow_dispatch:
 
-  schedule:
-    - cron: '0 0 * * *'
+    workflow_call:
+
+    schedule:
+        - cron: '0 0 * * *'
 jobs:
   deploy_and_test:
     runs-on: 
