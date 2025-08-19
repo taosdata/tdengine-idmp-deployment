@@ -1,0 +1,102 @@
+name: Test::IDMP E2E Test
+
+on:
+    workflow_dispatch:
+
+    workflow_call:
+
+    schedule:
+        - cron: '0 0 * * *'
+jobs:
+  deploy_and_test:
+    runs-on: 
+      group: CI
+      labels: [self-hosted, Linux, X64, TDasset, deploy]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy TDengine-IDMP
+        run: |
+            cd docker
+            docker compose -f docker-compose-tdgpt.yml down -v
+            docker compose -f docker-compose-tdgpt.yml -d
+      - name: Set SSH KEY
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+      - name: Get Test Case Source Code
+        run: |
+            git clone git@github.com:taosdata/TDasset.git
+      - name: Run Playwright tests
+        id: ui-test
+        run: |
+            for i in {1..30}; do
+                if curl -sSf localhost:6042 > /dev/null; then
+                echo "Service on port 6042 is up."
+                break
+                fi
+                echo "Waiting for service on port 6042..."
+                sleep 1
+            done
+            cd TDasset/frontend
+            pnpm i
+            pnpm run test:e2e:install
+            NODE_ENV=ci pnpm run test:e2e
+        
+      - name: Send Feishu Message to Platform Alert Group
+        if: failure()
+        run: |
+            function post_to_feishu() {
+            local text="$1"
+            curl -X POST -H "Content-Type: application/json" \
+            -d @- https://open.feishu.cn/open-apis/bot/v2/hook/02363732-91f1-49c4-879c-4e98cf31a5f3 <<EOF
+            {
+                "msg_type": "text",
+                "content": {
+                "text": "$text"
+                }
+            }
+            EOF
+            }
+            
+            PR_INFO="TDasset Deployment Check 测试失败\n
+            执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
+
+            post_to_feishu "$PR_INFO"
+      - name: Send Feishu Message to Platform Notification Group
+        if: success()
+        run: |
+            function post_to_feishu() {
+            local text="$1"
+            curl -X POST -H "Content-Type: application/json" \
+            -d @- https://open.feishu.cn/open-apis/bot/v2/hook/56c333b5-eae9-4c18-b0b6-7e4b7174f5c9 <<EOF
+            {
+                "msg_type": "text",
+                "content": {
+                "text": "$text"
+                }
+            }
+            EOF
+            }
+            
+            PR_INFO="TDasset Deployment Check 测试成功\n
+            执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
+
+            post_to_feishu "$PR_INFO"
+
+
+      - name: Save Test Report
+        if: always()
+        run: |
+            DATETIME=$(date +%Y%m%d-%H%M%S)
+            REPORT_DIR="/mnt/platform/reports/tdasset-ui/$DATETIME"
+            # echo "::group::Save Test Report"
+            cp -r TDasset/frontend/tests/e2e/test-reports $REPORT_DIR/
+            docker cp idmp:/app/logs $REPORT_DIR/
+            # cp -r /app/logs $REPORT_DIR/
+            echo "UI Test report generated at https://platform.tdengine.net:8090/reports/tdasset-ui/$DATETIME"
+
+      - name: Remove Docker Containers
+        run: |
+            cd docker
+            docker compose -f docker-compose-tdgpt.yml down -v
