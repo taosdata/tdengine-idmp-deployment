@@ -19,7 +19,7 @@ jobs:
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
-            docker compose -f docker-compose-tdgpt.yml -d
+            docker compose -f docker-compose-tdgpt.yml up -d
       - name: Set SSH KEY
         uses: webfactory/ssh-agent@v0.8.0
         with:
