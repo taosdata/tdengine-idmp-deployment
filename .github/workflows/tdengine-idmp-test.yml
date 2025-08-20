@@ -32,6 +32,7 @@ jobs:
           repository: taosdata/TDasset
           token: ${{ steps.app-token.outputs.token }}
           path: TDasset
+          ref: 'main'
       - name: Run Playwright tests
         id: ui-test
         run: |
