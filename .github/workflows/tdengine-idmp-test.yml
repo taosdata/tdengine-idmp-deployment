@@ -48,46 +48,46 @@ jobs:
             pnpm run test:e2e:install
             NODE_ENV=ci pnpm run test:e2e
         
-      - name: Send Feishu Message to Platform Alert Group
-        if: failure()
-        run: |
-            function post_to_feishu() {
-            local text="$1"
-            curl -X POST -H "Content-Type: application/json" \
-            -d @- https://open.feishu.cn/open-apis/bot/v2/hook/02363732-91f1-49c4-879c-4e98cf31a5f3 <<EOF
-            {
-                "msg_type": "text",
-                "content": {
-                "text": "$text"
-                }
-            }
-            EOF
-            }
+      # - name: Send Feishu Message to Platform Alert Group
+      #   if: failure()
+      #   run: |
+      #       function post_to_feishu() {
+      #       local text="$1"
+      #       curl -X POST -H "Content-Type: application/json" \
+      #       -d @- https://open.feishu.cn/open-apis/bot/v2/hook/02363732-91f1-49c4-879c-4e98cf31a5f3 <<EOF
+      #       {
+      #           "msg_type": "text",
+      #           "content": {
+      #           "text": "$text"
+      #           }
+      #       }
+      #       EOF
+      #       }
             
-            PR_INFO="TDasset Deployment Check 测试失败\n
-            执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
+      #       PR_INFO="TDasset Deployment Check 测试失败\n
+      #       执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
 
-            post_to_feishu "$PR_INFO"
-      - name: Send Feishu Message to Platform Notification Group
-        if: success()
-        run: |
-            function post_to_feishu() {
-            local text="$1"
-            curl -X POST -H "Content-Type: application/json" \
-            -d @- https://open.feishu.cn/open-apis/bot/v2/hook/56c333b5-eae9-4c18-b0b6-7e4b7174f5c9 <<EOF
-            {
-                "msg_type": "text",
-                "content": {
-                "text": "$text"
-                }
-            }
-            EOF
-            }
+      #       post_to_feishu "$PR_INFO"
+      # - name: Send Feishu Message to Platform Notification Group
+      #   if: success()
+      #   run: |
+      #       function post_to_feishu() {
+      #       local text="$1"
+      #       curl -X POST -H "Content-Type: application/json" \
+      #       -d @- https://open.feishu.cn/open-apis/bot/v2/hook/56c333b5-eae9-4c18-b0b6-7e4b7174f5c9 <<EOF
+      #       {
+      #           "msg_type": "text",
+      #           "content": {
+      #           "text": "$text"
+      #           }
+      #       }
+      #       EOF
+      #       }
             
-            PR_INFO="TDasset Deployment Check 测试成功\n
-            执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
+      #       PR_INFO="TDasset Deployment Check 测试成功\n
+      #       执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
 
-            post_to_feishu "$PR_INFO"
+      #       post_to_feishu "$PR_INFO"
 
 
       - name: Save Test Report
