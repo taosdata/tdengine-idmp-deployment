@@ -57,6 +57,7 @@ services:
       TZ: "${TZ:-UTC}"
       TSDB_URL: "http://tdengine-tsdb:6041"
       TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp:6042"
+      QUARKUS_PROFILE: "${QUARKUS_PROFILE:-prod}"
     ports:
       - "6042:6042"
       - "8082:8082"

@@ -11,7 +11,7 @@ jobs:
   deploy_and_test:
     runs-on: 
       group: CI
-      labels: [self-hosted, Linux, X64, TDasset, deploy]
+      labels: [self-hosted, Linux, X64, TDasset, idmp-deployment]
     steps:
       - uses: actions/checkout@v3
       
@@ -19,12 +19,20 @@ jobs:
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
-            docker compose -f docker-compose-tdgpt.yml up -d
-
-      - name: Get Test Case Source Code
-        run: |
-            cd ~/TDasset
-            git checkout main && git pull
+            QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ vars.TAOSDATA_BOT_ID }}
+          private_key: ${{ secrets.TAOSDATA_BOT_KEY }}
+      - name: Checkout TDasset repository
+        uses: actions/checkout@v4
+        with:
+          repository: taosdata/TDasset
+          token: ${{ steps.app-token.outputs.token }}
+          path: TDasset
+          ref: 'main'
       - name: Run Playwright tests
         id: ui-test
         run: |
@@ -39,7 +47,7 @@ jobs:
             cd ~/TDasset/frontend
             pnpm i
             pnpm run test:e2e:install
-            NODE_ENV=ci pnpm run test:e2e
+            NODE_ENV=ci GLOBAL_TIMEOUT=1800000 TIMEOUT=60000 EXPECT_TIMEOUT=30000 pnpm exec playwright test --project=Chrome --workers=2
         
       - name: Send Feishu Message to Platform Alert Group
         if: failure()
@@ -57,7 +65,7 @@ jobs:
             EOF
             }
             
-            PR_INFO="TDasset Deployment Check 测试失败\n
+            PR_INFO="TDengine-idmp Deployment Check 测试失败\n
             执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
 
             post_to_feishu "$PR_INFO"
@@ -77,7 +85,7 @@ jobs:
             EOF
             }
             
-            PR_INFO="TDasset Deployment Check 测试成功\n
+            PR_INFO="TDengine-idmp Deployment Check 测试成功\n
             执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
 
             post_to_feishu "$PR_INFO"
@@ -89,8 +97,8 @@ jobs:
             DATETIME=$(date +%Y%m%d-%H%M%S)
             REPORT_DIR="/mnt/platform/reports/tdasset-ui/$DATETIME"
             # echo "::group::Save Test Report"
-            cp -r TDasset/frontend/tests/e2e/test-reports $REPORT_DIR/
-            docker cp idmp:/app/logs $REPORT_DIR/
+            cp -r ~/TDasset/frontend/tests/e2e/test-reports $REPORT_DIR/
+            # docker cp tdengine-idmp:/app/logs $REPORT_DIR/
             # cp -r /app/logs $REPORT_DIR/
             echo "UI Test report generated at https://platform.tdengine.net:8090/reports/tdasset-ui/$DATETIME"
 
