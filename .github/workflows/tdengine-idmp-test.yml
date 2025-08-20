@@ -46,7 +46,7 @@ jobs:
             cd ~/TDasset/frontend
             pnpm i
             pnpm run test:e2e:install
-            NODE_ENV=ci pnpm run test:e2e --workers=2 --timeout=1800000
+            NODE_ENV=ci pnpm run test:e2e 
         
       # - name: Send Feishu Message to Platform Alert Group
       #   if: failure()
