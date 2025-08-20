@@ -46,7 +46,7 @@ jobs:
             cd ~/TDasset/frontend
             pnpm i
             pnpm run test:e2e:install
-            NODE_ENV=ci pnpm exec playwright test --project=Chrome --workers=1 --timeout=1800000
+            NODE_ENV=ci pnpm exec playwright test --project=Chrome --workers=2 --globalTimeout=1800000
         
       # - name: Send Feishu Message to Platform Alert Group
       #   if: failure()
