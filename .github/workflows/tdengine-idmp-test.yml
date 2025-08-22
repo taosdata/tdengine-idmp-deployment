@@ -11,7 +11,7 @@ jobs:
   deploy_and_test:
     runs-on: 
       group: CI
-      labels: [self-hosted, Linux, X64, TDasset, idmp-deployment]
+      labels: [self-hosted, Linux, X64, TDasset, ci,sanity]
     steps:
       - uses: actions/checkout@v3
       
@@ -20,19 +20,7 @@ jobs:
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
             QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: tibdex/github-app-token@v1
-        with:
-          app_id: ${{ vars.TAOSDATA_BOT_ID }}
-          private_key: ${{ secrets.TAOSDATA_BOT_KEY }}
-      - name: Checkout TDasset repository
-        uses: actions/checkout@v4
-        with:
-          repository: taosdata/TDasset
-          token: ${{ steps.app-token.outputs.token }}
-          path: TDasset
-          ref: 'main'
+
       - name: Run Playwright tests
         id: ui-test
         run: |
@@ -45,9 +33,10 @@ jobs:
                 sleep 1
             done
             cd ~/TDasset/frontend
+            git pull
             pnpm i
             pnpm run test:e2e:install
-            NODE_ENV=ci GLOBAL_TIMEOUT=1800000 TIMEOUT=60000 EXPECT_TIMEOUT=30000 pnpm exec playwright test --project=Chrome --workers=2
+            NODE_ENV=ci pnpm run test:e2e
         
       - name: Send Feishu Message to Platform Alert Group
         if: failure()
@@ -103,6 +92,7 @@ jobs:
             echo "UI Test report generated at https://platform.tdengine.net:8090/reports/tdasset-ui/$DATETIME"
 
       - name: Remove Docker Containers
+        if: always()
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
