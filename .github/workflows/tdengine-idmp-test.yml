@@ -48,7 +48,7 @@ jobs:
             git pull
             pnpm i
             pnpm run test:e2e:install
-            NODE_ENV=ci GLOBAL_TIMEOUT=1800000 TIMEOUT=60000 EXPECT_TIMEOUT=30000 pnpm exec playwright test --project=Chrome --workers=2
+            NODE_ENV=ci pnpm run test:e2e
         
       - name: Send Feishu Message to Platform Alert Group
         if: failure()
