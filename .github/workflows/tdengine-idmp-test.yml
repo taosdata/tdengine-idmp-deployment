@@ -11,7 +11,7 @@ jobs:
   deploy_and_test:
     runs-on: 
       group: CI
-      labels: [self-hosted, Linux, X64, TDasset, idmp-deployment]
+      labels: [self-hosted, Linux, X64, TDasset, ci,sanity]
     steps:
       - uses: actions/checkout@v3
       
