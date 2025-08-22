@@ -103,6 +103,7 @@ jobs:
             echo "UI Test report generated at https://platform.tdengine.net:8090/reports/tdasset-ui/$DATETIME"
 
       - name: Remove Docker Containers
+        if: always()
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
