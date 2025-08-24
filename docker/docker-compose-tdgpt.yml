@@ -4,6 +4,7 @@ services:
     container_name: tdengine-tdgpt
     hostname: tdengine-tdgpt
     restart: always
+    pull_policy: always
     environment:
       TZ: "${TZ:-UTC}"
     ports:
@@ -24,6 +25,7 @@ services:
     container_name: tdengine-tsdb
     hostname: tdengine
     restart: always
+    pull_policy: always
     environment:
       TZ: "${TZ:-UTC}"
     ports:
@@ -50,6 +52,7 @@ services:
     image: tdengine/idmp-ee:latest
     container_name: tdengine-idmp
     restart: always
+    pull_policy: always
     depends_on:
       tdengine-tsdb:
         condition: service_healthy
