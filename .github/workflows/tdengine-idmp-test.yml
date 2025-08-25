@@ -19,8 +19,7 @@ jobs:
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
-            docker compose -f docker-compose-tdgpt.yml pull
-            QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d
+            QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d --pull always
 
       - name: Run Playwright tests
         id: ui-test
