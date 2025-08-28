@@ -71,9 +71,9 @@ docker compose -f docker-compose-tdgpt.yml down
 ```
 
 **额外端口：**
-- **6090**: TDgpt 主服务端口
-- **5000**: 模型服务端口
-- **5001**: 扩展模型服务端口
+- **6035**: TDgpt 主服务端口
+- **6036**: 模型服务端口
+- **6037**: 扩展模型服务端口
 
 **服务启动顺序：**
 1. **TDgpt 服务**: 优先启动，提供 AI 分析能力
@@ -83,7 +83,7 @@ docker compose -f docker-compose-tdgpt.yml down
 ## 健康检查
 
 所有服务都配置了健康检查机制，确保服务按正确顺序启动：
-- **TDgpt**: 检查 6090 端口可用性
+- **TDgpt**: 检查 6035 端口可用性
 - **TSDB Enterprise**: 检查数据库连接状态
 - **IDMP**: 检查 6042 端口可用性
 

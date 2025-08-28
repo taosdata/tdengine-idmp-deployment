@@ -7,13 +7,13 @@ services:
     environment:
       TZ: "${TZ:-UTC}"
     ports:
-      - "6070:6090"
-      - "6071:5000"
-      - "6072:5001"
+      - "6035:6035"
+      - "6036:6036"
+      - "6037:6037"
     networks:
       - taos_net
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6090').read()"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6035').read()"]
       interval: 30s
       timeout: 10s
       retries: 3
