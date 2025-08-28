@@ -71,9 +71,9 @@ docker compose -f docker-compose-tdgpt.yml down
 ```
 
 **Additional Ports:**
-- **6090**: TDgpt main service port
-- **5000**: Model service port
-- **5001**: Extended model service port
+- **6035**: TDgpt main service port
+- **6036**: Model service port
+- **6037**: Extended model service port
 
 **Service Startup Order:**
 1. **TDgpt Service**: Starts first, providing AI analysis capabilities
@@ -83,7 +83,7 @@ docker compose -f docker-compose-tdgpt.yml down
 ## Health Checks
 
 All services are configured with health check mechanisms to ensure services start in the correct order:
-- **TDgpt**: Checks port 6090 availability
+- **TDgpt**: Checks port 6035 availability
 - **TSDB Enterprise**: Checks database connection status
 - **IDMP**: Checks port 6042 availability
 
