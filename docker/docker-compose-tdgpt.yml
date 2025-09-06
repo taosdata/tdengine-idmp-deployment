@@ -58,7 +58,7 @@ services:
       TSDB_URL: "http://tdengine-tsdb:6041"
       TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp:6042"
       QUARKUS_PROFILE: "${QUARKUS_PROFILE:-prod}"
-      IDMP_URL: "${IDMP_URL}"
+      IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
     ports:
       - "6042:6042"
       - "8082:8082"
