@@ -23,7 +23,7 @@ jobs:
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
-            QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d --pull always
+            QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d
             docker images | grep 'tdengine'
 
       - name: Run Playwright tests
