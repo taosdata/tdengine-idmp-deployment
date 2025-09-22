@@ -5,8 +5,7 @@ on:
 
     workflow_call:
 
-    schedule:
-        - cron: '0 0 * * *'
+
 jobs:
   deploy_and_test:
     runs-on: 
