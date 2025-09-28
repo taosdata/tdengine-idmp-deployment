@@ -36,7 +36,7 @@ jobs:
             git pull
             pnpm i
             pnpm run test:e2e:install
-            NODE_ENV=ci pnpm run test:e2e
+            NODE_ENV=ci pnpm run test:e2e --workers=1
         
       - name: Send Feishu Message to Platform Alert Group
         if: failure()
