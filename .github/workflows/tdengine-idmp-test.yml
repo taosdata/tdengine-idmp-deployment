@@ -93,7 +93,7 @@ jobs:
             # echo "::group::Save Test Report"
             cp -r ~/TDasset/frontend/tests/e2e/test-reports $REPORT_DIR/
             docker cp tdengine-idmp:/var/log/taos $REPORT_DIR/
-            docker cp tdengine-tsdb:/var/lib/taos/idmp $REPORT_DIR/
+            docker cp tdengine-idmp:/var/lib/taos/idmp $REPORT_DIR/
             # cp -r /app/logs $REPORT_DIR/
             echo "UI Test report generated at https://platform.tdengine.net:8090/reports/tdasset-ui/$DATETIME"
 
