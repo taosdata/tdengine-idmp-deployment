@@ -13,6 +13,7 @@ TDengine IDMP docker
 │── docker-compose.yml        # 标准部署配置文件（TSDB Enterprise + IDMP）
 │── docker-compose-tdgpt.yml  # 完整部署配置文件（TSDB Enterprise + IDMP + TDgpt）
 │── init-anode.sql            # TDengine anode 初始化脚本
+│── start.sh                  # 交互式启动脚本，支持部署模式选择
 │── README.md                 # 英文项目文档
 └── README-CN.md              # 中文项目文档
 ```
@@ -35,9 +36,59 @@ docker build \
 docker tag tdengine/idmp-ee:<version> tdengine/idmp-ee:latest
 ```
 
-## 部署方式
+## 快速开始（推荐）
+
+### 使用交互式启动脚本
+
+最简单的启动 TDengine IDMP 服务的方法是使用交互式启动脚本：
+
+```bash
+# 设置脚本执行权限
+chmod +x start.sh
+
+# 运行交互式启动脚本
+./start.sh
+```
+
+脚本功能：
+1. **检查 Docker Compose**：自动检测系统中是否有 `docker-compose` 或 `docker compose` 命令
+2. **选择部署模式**：交互式提示选择：
+   - 标准部署（TSDB Enterprise + IDMP）
+   - 完整部署（TSDB Enterprise + IDMP + TDgpt）
+3. **配置 IDMP URL**：自动检测主机 IP 并设置 IDMP_URL 环境变量
+4. **启动服务**：使用正确的配置启动选定的服务
+
+#### 停止服务
+
+停止通过交互式脚本启动的服务：
+
+```bash
+# 停止标准部署服务
+docker compose down
+
+# 停止完整部署服务（如果您选择了选项 2）
+docker compose -f docker-compose-tdgpt.yml down
+
+# 停止服务并删除数据卷（完全清理）
+docker compose down -v
+# 或者对于完整部署
+docker compose -f docker-compose-tdgpt.yml down -v
+```
+
+**注意**：使用与启动时相同的 compose 文件（`docker-compose.yml` 或 `docker-compose-tdgpt.yml`）。
+
+## 手动部署方式
 
 本项目提供两种部署方式：
+
+### 环境变量配置
+
+在手动启动服务之前，您需要设置 `IDMP_URL` 环境变量。该变量用于 IDMP 服务配置 Web 控制台访问 URL。
+
+```bash
+# 设置 IDMP_URL 环境变量（请替换为您的实际 IP）
+export IDMP_URL="http://your-host-ip:6042"
+```
 
 ### 方式一：标准部署（推荐用于开发环境）
 

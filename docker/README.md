@@ -13,6 +13,7 @@ TDengine IDMP docker
 │── docker-compose.yml        # Standard deployment configuration (TSDB Enterprise + IDMP)
 │── docker-compose-tdgpt.yml  # Full deployment configuration (TSDB Enterprise + IDMP + TDgpt)
 │── init-anode.sql            # TDengine anode initialization script
+│── start.sh                  # Interactive startup script with deployment mode selection
 │── README.md                 # English project documentation
 └── README-CN.md              # Chinese project documentation
 ```
@@ -35,9 +36,59 @@ docker build \
 docker tag tdengine/idmp-ee:<version> tdengine/idmp-ee:latest
 ```
 
-## Deployment Options
+## Quick Start (Recommended)
+
+### Using the Interactive Startup Script
+
+The easiest way to start the TDengine IDMP services is using the interactive startup script:
+
+```bash
+# Make the script executable
+chmod +x start.sh
+
+# Run the interactive startup script
+./start.sh
+```
+
+The script will:
+1. **Check Docker Compose**: Automatically detect whether `docker-compose` or `docker compose` command is available
+2. **Select Deployment Mode**: Interactive prompt to choose between:
+   - Standard deployment (TSDB Enterprise + IDMP)
+   - Full deployment (TSDB Enterprise + IDMP + TDgpt)
+3. **Configure IDMP URL**: Automatically detect your host IP and set the IDMP_URL environment variable
+4. **Start Services**: Launch the selected services with proper configuration
+
+#### Stopping Services
+
+To stop the services started by the interactive script:
+
+```bash
+# Stop standard deployment services
+docker compose down
+
+# Stop full deployment services (if you selected option 2)
+docker compose -f docker-compose-tdgpt.yml down
+
+# Stop services and remove volumes (complete cleanup)
+docker compose down -v
+# or for full deployment
+docker compose -f docker-compose-tdgpt.yml down -v
+```
+
+**Note**: Use the same compose file (`docker-compose.yml` or `docker-compose-tdgpt.yml`) that you selected during startup.
+
+## Manual Deployment Options
 
 This project provides two deployment options:
+
+### Environment Variable Configuration
+
+Before starting services manually, you need to set the `IDMP_URL` environment variable. This variable is used by the IDMP service to configure the web console access URL.
+
+```bash
+# Set the IDMP_URL environment variable (replace with your actual IP)
+export IDMP_URL="http://your-host-ip:6042"
+```
 
 ### Option 1: Standard Deployment (Recommended for Development)
 
