@@ -107,13 +107,13 @@ function setup_url() {
 check_docker_compose
 select_compose_mode
 setup_url
-export IDMP_URL=$idmp_url
+export IDMP_URL=${idmp_url}
 
 log info "Starting services with ${compose_file}..."
-$compose_cmd -f "$compose_file" up -d
+${compose_cmd} -f "${compose_file}" up -d
 ret=$?
 
-if [ $ret -eq 0 ]; then
+if [[ $ret -eq 0 ]]; then
   log info "Services started successfully!"
   log info "IDMP Web Console: ${idmp_url}"
 else
