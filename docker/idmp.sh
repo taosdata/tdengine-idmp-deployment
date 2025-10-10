@@ -25,15 +25,15 @@ function log() {
 
 function show_help() {
   echo "Usage: $0 [COMMAND] [OPTIONS]"
-  echo ""
-  echo "Commands:"
+
+  echo -e "\nCommands:"
   echo -e "  start\t\t\tStart the IDMP services"
   echo -e "  stop\t\t\tStop the IDMP services"
-  echo ""
-  echo "Options:"
+
+  echo -e "\nOptions:"
   echo -e "  -h, --help\t\tShow this help message"
-  echo ""
-  echo "Examples:"
+
+  echo -e "\nExamples:"
   echo -e "  $0 start\t# Start with interactive mode"
   echo -e "  $0 stop\t# Stop services"
 }
@@ -165,12 +165,10 @@ function detect_compose_file() {
     return 1
   fi
   
-  # 检查 tdgpt 容器是否存在
   if docker ps --format "table {{.Names}}" | grep -q "tdengine-tdgpt"; then
     detected_file="docker-compose-tdgpt.yml"
     log info "Detected TDgpt containers, using: ${detected_file}"
   else
-    # 检查是否有 tdengine-idmp 或 tdengine-tsdb 容器
     if docker ps --format "table {{.Names}}" | grep -qE "tdengine-idmp|tdengine-tsdb"; then
       detected_file="docker-compose.yml"
       log info "Detected standard deployment containers, using: ${detected_file}"
@@ -203,6 +201,7 @@ function stop_services() {
   fi
 }
 
+# main
 parse_arguments "$@"
 
 # Execute based on action
