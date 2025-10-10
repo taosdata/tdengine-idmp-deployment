@@ -13,7 +13,7 @@ TDengine IDMP docker
 │── docker-compose.yml        # 标准部署配置文件（TSDB Enterprise + IDMP）
 │── docker-compose-tdgpt.yml  # 完整部署配置文件（TSDB Enterprise + IDMP + TDgpt）
 │── init-anode.sql            # TDengine anode 初始化脚本
-│── start.sh                  # 交互式启动脚本，支持部署模式选择
+│── start.sh                  # 交互式启动/停止脚本
 │── README.md                 # 英文项目文档
 └── README-CN.md              # 中文项目文档
 ```
@@ -40,17 +40,25 @@ docker tag tdengine/idmp-ee:<version> tdengine/idmp-ee:latest
 
 ### 使用交互式启动脚本
 
-最简单的启动 TDengine IDMP 服务的方法是使用交互式启动脚本：
+最简单的启动 TDengine IDMP 服务的方法是使用统一管理脚本：
 
 ```bash
 # 设置脚本执行权限
-chmod +x start.sh
+chmod +x idmp.sh
 
-# 运行交互式启动脚本
-./start.sh
+# 启动服务（交互式模式）
+./idmp.sh start
+
+# 停止服务（自动检测运行中的服务）
+./idmp.sh stop
+
+# 显示帮助信息
+./idmp.sh -h
 ```
 
 脚本功能：
+
+#### 启动服务 (`./idmp.sh start`)
 1. **检查 Docker Compose**：自动检测系统中是否有 `docker-compose` 或 `docker compose` 命令
 2. **选择部署模式**：交互式提示选择：
    - 标准部署（TSDB Enterprise + IDMP）
@@ -58,24 +66,13 @@ chmod +x start.sh
 3. **配置 IDMP URL**：自动检测主机 IP 并设置 IDMP_URL 环境变量
 4. **启动服务**：使用正确的配置启动选定的服务
 
-#### 停止服务
+#### 停止服务 (`./idmp.sh stop`)
+- **智能检测**：通过检查容器名称自动检测当前运行的部署模式
+- **智能停止**：根据检测到的容器使用正确的 docker-compose 文件：
+  - 如果发现 `tdengine-tdgpt` 容器 → 使用 `docker-compose-tdgpt.yml`
+  - 如果发现标准的 `tdengine-idmp` 或 `tdengine-tsdb` 容器 → 使用 `docker-compose.yml`
+- **安全操作**：通过自动检测正确配置来避免错误
 
-停止通过交互式脚本启动的服务：
-
-```bash
-# 停止标准部署服务
-docker compose down
-
-# 停止完整部署服务（如果您选择了选项 2）
-docker compose -f docker-compose-tdgpt.yml down
-
-# 停止服务并删除数据卷（完全清理）
-docker compose down -v
-# 或者对于完整部署
-docker compose -f docker-compose-tdgpt.yml down -v
-```
-
-**注意**：使用与启动时相同的 compose 文件（`docker-compose.yml` 或 `docker-compose-tdgpt.yml`）。
 
 ## 手动部署方式
 

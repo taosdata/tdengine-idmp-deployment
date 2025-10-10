@@ -13,7 +13,7 @@ TDengine IDMP docker
 │── docker-compose.yml        # Standard deployment configuration (TSDB Enterprise + IDMP)
 │── docker-compose-tdgpt.yml  # Full deployment configuration (TSDB Enterprise + IDMP + TDgpt)
 │── init-anode.sql            # TDengine anode initialization script
-│── start.sh                  # Interactive startup script with deployment mode selection
+│── idmp.sh                   # Interactive startup/stop script
 │── README.md                 # English project documentation
 └── README-CN.md              # Chinese project documentation
 ```
@@ -44,13 +44,21 @@ The easiest way to start the TDengine IDMP services is using the interactive sta
 
 ```bash
 # Make the script executable
-chmod +x start.sh
+chmod +x idmp.sh
 
-# Run the interactive startup script
-./start.sh
+# Start services (interactive mode)
+./idmp.sh start
+
+# Stop services (auto-detect running services)
+./idmp.sh stop
+
+# Show help
+./idmp.sh -h
 ```
 
 The script will:
+
+#### Starting Services (`./idmp.sh start`)
 1. **Check Docker Compose**: Automatically detect whether `docker-compose` or `docker compose` command is available
 2. **Select Deployment Mode**: Interactive prompt to choose between:
    - Standard deployment (TSDB Enterprise + IDMP)
@@ -58,24 +66,12 @@ The script will:
 3. **Configure IDMP URL**: Automatically detect your host IP and set the IDMP_URL environment variable
 4. **Start Services**: Launch the selected services with proper configuration
 
-#### Stopping Services
-
-To stop the services started by the interactive script:
-
-```bash
-# Stop standard deployment services
-docker compose down
-
-# Stop full deployment services (if you selected option 2)
-docker compose -f docker-compose-tdgpt.yml down
-
-# Stop services and remove volumes (complete cleanup)
-docker compose down -v
-# or for full deployment
-docker compose -f docker-compose-tdgpt.yml down -v
-```
-
-**Note**: Use the same compose file (`docker-compose.yml` or `docker-compose-tdgpt.yml`) that you selected during startup.
+#### Stopping Services (`./idmp.sh stop`)
+- **Smart Detection**: Automatically detects which deployment mode is currently running by checking container names
+- **Intelligent Stopping**: Uses the correct docker-compose file based on detected containers:
+  - If `tdengine-tdgpt` containers are found → uses `docker-compose-tdgpt.yml`
+  - If standard `tdengine-idmp` or `tdengine-tsdb` containers are found → uses `docker-compose.yml`
+- **Safe Operation**: Prevents errors by detecting the correct configuration automatically
 
 ## Manual Deployment Options
 

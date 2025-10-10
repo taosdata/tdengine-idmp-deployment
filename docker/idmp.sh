@@ -23,6 +23,41 @@ function log() {
   esac
 }
 
+function show_help() {
+  echo "Usage: $0 [COMMAND] [OPTIONS]"
+  echo ""
+  echo "Commands:"
+  echo -e "  start\t\t\tStart the IDMP services"
+  echo -e "  stop\t\t\tStop the IDMP services"
+  echo ""
+  echo "Options:"
+  echo -e "  -h, --help\t\tShow this help message"
+  echo ""
+  echo "Examples:"
+  echo -e "  $0 start\t# Start with interactive mode"
+  echo -e "  $0 stop\t# Stop services"
+}
+
+function parse_arguments() {
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      start|stop)
+        action="$1"
+        shift
+        ;;
+      -h|--help)
+        show_help
+        exit 0
+        ;;
+      *)
+        log error "Unknown option: $1"
+        show_help
+        exit 1
+        ;;
+    esac
+  done
+}
+
 function check_docker_compose() {
   if command -v docker-compose >/dev/null 2>&1; then
     compose_cmd="docker-compose"
@@ -104,18 +139,83 @@ function setup_url() {
   log info "IDMP Server URL: ${idmp_url}"
 }
 
-check_docker_compose
-select_compose_mode
-setup_url
-export IDMP_URL=${idmp_url}
+function start_services() {
+  check_docker_compose
+  select_compose_mode
+  setup_url
+  export IDMP_URL=${idmp_url}
 
-log info "Starting services with ${compose_file}..."
-${compose_cmd} -f "${compose_file}" up -d
-ret=$?
+  log info "Starting services with ${compose_file}..."
+  ${compose_cmd} -f "${compose_file}" up -d
+  ret=$?
 
-if [[ $ret -eq 0 ]]; then
-  log info "Services started successfully!"
-  log info "IDMP Web Console: ${idmp_url}"
-else
-  echo -e "${YELLOW}Failed to start services. Please check the logs.${NC}"
-fi
+  if [[ ${ret} -eq 0 ]]; then
+    log info "Services started successfully!"
+    log info "IDMP Web Console: ${idmp_url}"
+  else
+    echo -e "${YELLOW}Failed to start services. Please check the logs.${NC}"
+  fi
+}
+
+function detect_compose_file() {
+  local detected_file=""
+  
+  if ! docker ps -q | grep -q .; then
+    log warn "No running containers found"
+    return 1
+  fi
+  
+  # 检查 tdgpt 容器是否存在
+  if docker ps --format "table {{.Names}}" | grep -q "tdengine-tdgpt"; then
+    detected_file="docker-compose-tdgpt.yml"
+    log info "Detected TDgpt containers, using: ${detected_file}"
+  else
+    # 检查是否有 tdengine-idmp 或 tdengine-tsdb 容器
+    if docker ps --format "table {{.Names}}" | grep -qE "tdengine-idmp|tdengine-tsdb"; then
+      detected_file="docker-compose.yml"
+      log info "Detected standard deployment containers, using: ${detected_file}"
+    else
+      log warn "No IDMP related containers found"
+      return 1
+    fi
+  fi
+  
+  compose_file="$detected_file"
+  return 0
+}
+
+function stop_services() {
+  check_docker_compose
+  
+  if ! detect_compose_file; then
+    log warn "Could not detect any running IDMP services."
+    return
+  fi
+  
+  log info "Stopping services with ${compose_file}..."
+  ${compose_cmd} -f "${compose_file}" down
+  ret=$?
+
+  if [[ ${ret} -eq 0 ]]; then
+    log info "Services stopped successfully!"
+  else
+    log error "Failed to stop services. Please check the logs."
+  fi
+}
+
+parse_arguments "$@"
+
+# Execute based on action
+case "${action}" in
+  start)
+    start_services
+    ;;
+  stop)
+    stop_services
+    ;;
+  *)
+    log error "Unknown action: ${action}"
+    show_help
+    exit 1
+    ;;
+esac
