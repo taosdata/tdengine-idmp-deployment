@@ -13,7 +13,7 @@ TDengine IDMP docker
 │── docker-compose.yml        # 标准部署配置文件（TSDB Enterprise + IDMP）
 │── docker-compose-tdgpt.yml  # 完整部署配置文件（TSDB Enterprise + IDMP + TDgpt）
 │── init-anode.sql            # TDengine anode 初始化脚本
-│── start.sh                  # 交互式启动/停止脚本
+│── idmp.sh                   # 交互式启动/停止脚本
 │── README.md                 # 英文项目文档
 └── README-CN.md              # 中文项目文档
 ```
