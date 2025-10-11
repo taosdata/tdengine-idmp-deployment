@@ -197,10 +197,12 @@ function stop_services() {
     if [[ "$clean_volumes" =~ ^[Yy]$ ]]; then
       log info "Stopping services and cleaning volumes..."
       ${compose_cmd} -f "${compose_file}" down -v
+      ret=$?
       break
     elif [[ -z "$clean_volumes" || "$clean_volumes" =~ ^[Nn]$ ]]; then
       log info "Stopping services without cleaning volumes..."
       ${compose_cmd} -f "${compose_file}" down
+      ret=$?
       break
     else
       echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
