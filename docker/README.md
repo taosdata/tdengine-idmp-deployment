@@ -71,6 +71,9 @@ The script will:
 - **Intelligent Stopping**: Uses the correct docker-compose file based on detected containers:
   - If `tdengine-tdgpt` containers are found → uses `docker-compose-tdgpt.yml`
   - If standard `tdengine-idmp` or `tdengine-tsdb` containers are found → uses `docker-compose.yml`
+- **Volume Management**: Interactive prompt to choose whether to clean volumes:
+  - **Default behavior**: Preserves data volumes for safety
+  - **Optional cleanup**: Choose to remove volumes if data persistence is not needed
 - **Safe Operation**: Prevents errors by detecting the correct configuration automatically
 
 ## Manual Deployment Options
@@ -101,8 +104,8 @@ docker compose down
 **Service Ports:**
 - **6030**: TDengine TSDB Enterprise client connection port
 - **6041**: TDengine TSDB Enterprise REST API port
-- **6060**: TDengine TSDB Enterprise management system frontend port
 - **6042**: IDMP Web frontend port
+- **6060**: TDengine TSDB Enterprise management system frontend port
 - **8082**: IDMP h2 service port
 
 ### Option 2: Full Deployment (With AI Features)
