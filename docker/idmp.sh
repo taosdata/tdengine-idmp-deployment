@@ -39,6 +39,12 @@ function show_help() {
 }
 
 function parse_arguments() {
+  if [[ $# -eq 0 ]]; then
+    log error "No command provided.\n"
+    show_help
+    exit 1
+  fi
+
   while [[ $# -gt 0 ]]; do
     case $1 in
       start|stop)
@@ -122,7 +128,7 @@ function setup_url() {
   fi
 
   while true; do
-    printf "%b" "${GREEN_DARK}Do you want to use this URL to access IDMP web console? ${idmp_url} [Y/n]: ${NC}"
+    printf "%b" "${GREEN_DARK}Do you want to use this URL to access IDMP web console? ${idmp_url} [Y/n] ${NC}"
     read -r use_default_url
     if [[ -z "$use_default_url" || "$use_default_url" =~ ^[Yy]$ ]]; then
       break
@@ -192,10 +198,10 @@ function stop_services() {
   
   log info "Stopping services with ${compose_file}..."
   while true; do
-    printf "%b" "${GREEN_DARK}Do you want to clean volumes [Y/n], default N: ${NC}"
+    printf "%b" "${GREEN_DARK}Do you want to clear data and logs? [y/N] ${NC}"
     read -r clean_volumes
     if [[ "$clean_volumes" =~ ^[Yy]$ ]]; then
-      log info "Stopping services and cleaning volumes..."
+      log info "Stopping services and cleaning volumes ..."
       ${compose_cmd} -f "${compose_file}" down -v
       ret=$?
       break
