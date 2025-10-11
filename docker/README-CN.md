@@ -71,6 +71,9 @@ chmod +x idmp.sh
 - **智能停止**：根据检测到的容器使用正确的 docker-compose 文件：
   - 如果发现 `tdengine-tdgpt` 容器 → 使用 `docker-compose-tdgpt.yml`
   - 如果发现标准的 `tdengine-idmp` 或 `tdengine-tsdb` 容器 → 使用 `docker-compose.yml`
+- **数据卷管理**：交互式提示选择是否清理数据卷：
+  - **默认行为**：为安全起见，保留数据卷
+  - **可选清理**：如果不需要数据持久化，可选择删除数据卷
 - **安全操作**：通过自动检测正确配置来避免错误
 
 

@@ -71,6 +71,9 @@ The script will:
 - **Intelligent Stopping**: Uses the correct docker-compose file based on detected containers:
   - If `tdengine-tdgpt` containers are found → uses `docker-compose-tdgpt.yml`
   - If standard `tdengine-idmp` or `tdengine-tsdb` containers are found → uses `docker-compose.yml`
+- **Volume Management**: Interactive prompt to choose whether to clean volumes:
+  - **Default behavior**: Preserves data volumes for safety
+  - **Optional cleanup**: Choose to remove volumes if data persistence is not needed
 - **Safe Operation**: Prevents errors by detecting the correct configuration automatically
 
 ## Manual Deployment Options

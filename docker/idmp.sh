@@ -191,8 +191,21 @@ function stop_services() {
   fi
   
   log info "Stopping services with ${compose_file}..."
-  ${compose_cmd} -f "${compose_file}" down
-  ret=$?
+  while true; do
+    printf "%b" "${GREEN_DARK}Do you want to clean volumes [Y/n], default N: ${NC}"
+    read -r clean_volumes
+    if [[ "$clean_volumes" =~ ^[Yy]$ ]]; then
+      log info "Stopping services and cleaning volumes..."
+      ${compose_cmd} -f "${compose_file}" down -v
+      break
+    elif [[ -z "$clean_volumes" || "$clean_volumes" =~ ^[Nn]$ ]]; then
+      log info "Stopping services without cleaning volumes..."
+      ${compose_cmd} -f "${compose_file}" down
+      break
+    else
+      echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
+    fi
+  done
 
   if [[ ${ret} -eq 0 ]]; then
     log info "Services stopped successfully!"
