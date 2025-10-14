@@ -106,7 +106,7 @@ docker compose down
 - **6041**: TDengine TSDB Enterprise REST API port
 - **6042**: IDMP Web frontend port
 - **6060**: TDengine TSDB Enterprise management system frontend port
-- **8082**: IDMP h2 service port
+- **6038**: IDMP h2 service port
 
 ### Option 2: Full Deployment (With AI Features)
 
