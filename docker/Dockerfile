@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG DOWNLOAD_URL
@@ -11,20 +11,21 @@ RUN apt-get update \
         bash \
         net-tools \
         openjdk-21-jre-headless \
-        python3.10 \
-        python3.10-venv \
+        python3.12 \
+        python3.12-venv \
         fontconfig \
         locales \
         tzdata \
         procps \
         htop \
         curl \
-    && ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
-    && echo "Asia/Shanghai" > /etc/timezone \
+    && ln -fs /usr/bin/python3.12 /usr/bin/python3 \
+    && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
+    && echo "UTC" > /etc/timezone \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENV TZ=Asia/Shanghai \
+ENV TZ=UTC \
     LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 
 
@@ -41,10 +42,10 @@ RUN wget --progress=bar:force:noscroll "${DOWNLOAD_URL}" -O /tmp/tdengine-idmp-e
     && chown -R tdengine:tdengine /var/log/taos \
     && chown -R tdengine:tdengine /var/lib/taos
 
-RUN mkdir -p /opt/arthas && \
-    curl -L -o /opt/arthas/arthas-boot.jar https://arthas.aliyun.com/arthas-boot.jar && \
-    echo '#!/bin/sh\njava -jar /opt/arthas/arthas-boot.jar "$@"' > /usr/local/bin/arthas && \
-    chmod +x /usr/local/bin/arthas
+RUN mkdir -p /opt/arthas \
+    && curl -L -o /opt/arthas/arthas-boot.jar https://arthas.aliyun.com/arthas-boot.jar \
+    && echo '#!/bin/sh\njava -jar /opt/arthas/arthas-boot.jar "$@"' > /usr/local/bin/arthas \
+    && chmod +x /usr/local/bin/arthas
 
 COPY entrypoint.sh /entrypoint.sh
 

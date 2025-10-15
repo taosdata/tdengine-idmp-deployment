@@ -17,8 +17,10 @@ fi
 cd /usr/local/taos/idmp
 
 echo "Starting TDengine IDMP DB Service..."
+WEB_H2_EXTERNAL_NAMES=()
+[ -n "${H2_EXTERNAL_NAME}" ] && WEB_H2_EXTERNAL_NAMES=(-webExternalNames "${H2_EXTERNAL_NAME}")
 nohup /usr/bin/java -cp /usr/local/taos/idmp/lib/main/com.h2database.h2.jar org.h2.tools.Server \
-  -tcp -tcpAllowOthers -tcpPort 9092 -ifNotExists -web -webPort 8082 -webAllowOthers 2>&1 &
+  -tcp -tcpAllowOthers -tcpPort 9092 -ifNotExists -web -webPort 8082 -webAllowOthers "${WEB_H2_EXTERNAL_NAMES[@]}" 2>&1 &
 
 for i in {1..10}; do
   if netstat -tln | grep 9092; then

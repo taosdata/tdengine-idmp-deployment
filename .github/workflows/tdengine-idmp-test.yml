@@ -14,12 +14,17 @@ jobs:
       labels: [self-hosted, Linux, X64, TDasset, ci,sanity]
     steps:
       - uses: actions/checkout@v3
-      
+
+      - name: Remove CI containers if exists
+        run: |
+            cd /data1 
+            docker compose -f docker-compose-tdengine.yml down -v
       - name: Deploy TDengine-IDMP
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
-            QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d --pull always
+            QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d
+            docker images | grep 'tdengine'
 
       - name: Run Playwright tests
         id: ui-test
@@ -87,7 +92,8 @@ jobs:
             REPORT_DIR="/mnt/platform/reports/tdasset-ui/$DATETIME"
             # echo "::group::Save Test Report"
             cp -r ~/TDasset/frontend/tests/e2e/test-reports $REPORT_DIR/
-            # docker cp tdengine-idmp:/app/logs $REPORT_DIR/
+            docker cp tdengine-idmp:/var/log/taos $REPORT_DIR/
+            docker cp tdengine-idmp:/var/lib/taos/idmp $REPORT_DIR/
             # cp -r /app/logs $REPORT_DIR/
             echo "UI Test report generated at https://platform.tdengine.net:8090/reports/tdasset-ui/$DATETIME"
 
