@@ -25,7 +25,11 @@ jobs:
             docker compose -f docker-compose-tdgpt.yml down -v
             QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d
             docker images | grep 'tdengine'
-
+      - name: Checkout TDasset repository
+        uses: actions/checkout@v3
+        with:
+            repository: taosdata/TDasset
+            token: ${{ secrets.WORKFLOW_PAT }}
       - name: Run Playwright tests
         id: ui-test
         run: |
@@ -37,7 +41,8 @@ jobs:
                 echo "Waiting for service on port 6042..."
                 sleep 1
             done
-            cd ~/TDasset/frontend
+            cd ../TDasset/frontend
+            git checkout main
             git pull
             pnpm i
             pnpm run test:e2e:install
