@@ -30,6 +30,7 @@ jobs:
         with:
             repository: taosdata/TDasset
             token: ${{ secrets.WORKFLOW_PAT }}
+            path: TDasset
       - name: Run Playwright tests
         id: ui-test
         run: |
