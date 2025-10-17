@@ -42,6 +42,7 @@ jobs:
                 echo "Waiting for service on port 6042..."
                 sleep 1
             done
+            pwd
             cd TDasset/frontend
             git checkout main
             git pull
