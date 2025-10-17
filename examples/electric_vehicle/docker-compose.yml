@@ -37,7 +37,7 @@ services:
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
     ports:
       - "6042:6042"
-      - "8082:8082"
+      - "6038:6038"
     volumes:
       - idmp_data:/var/lib/taos
       - idmp_log:/var/log/taos
