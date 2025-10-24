@@ -1,0 +1,27 @@
+TSDB_CONFIG:
+#  key1: value1
+#  key2: value2
+
+IDMP_CONFIG:
+  tda:
+    default-connection:
+      connection-name: TDengine
+      enable: true
+      auth-type: UserPassword
+      url: http://tdengine-tsdb:6041
+      username: root
+      password: taosdata
+      explorer-url: http://tdengine-tsdb:6060
+    analysis:
+      event:
+        urls: ${TDA_ANALYSIS_EVENT_URLS:ws://localhost:6042}
+        event-types:
+          - WINDOW_OPEN
+          - WINDOW_CLOSE
+    phone-server-enabled: true
+    easy-config:
+      type: telegraf
+
+TDGPT_CONFIG:
+  enable: true
+  api_key: "abc123"
