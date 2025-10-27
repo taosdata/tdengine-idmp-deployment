@@ -47,7 +47,7 @@ services:
       start_period: 30s
 
   tdengine-idmp:
-    image: image.pre.cloud.taosdata.com:8111/tda/tda-backend:1.0.5.1-20251024
+    image: image.pre.cloud.taosdata.com/tda/tda-backend:1.0.5.1-20251024
     container_name: tdengine-idmp
     restart: always
     depends_on:
