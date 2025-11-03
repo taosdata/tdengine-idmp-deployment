@@ -76,6 +76,71 @@ chmod +x idmp.sh
   - **可选清理**：如果不需要数据持久化，可选择删除数据卷
 - **安全操作**：通过自动检测正确配置来避免错误
 
+## 数据备份和迁移
+
+为简化 Docker 数据卷的备份和迁移，本项目提供了辅助脚本（`backup.sh` 和 `restore.sh`）。这在将您的 TDengine 和 IDMP 数据从一个服务器迁移到另一个服务器时非常有用。
+
+> **重要提示：** 使用这些脚本前，**必须**编辑 `backup.sh` 和 `restore.sh`，正确定义文件顶部的 `VOLUMES_TO_BACKUP` 和 `VOLUMES_TO_RESTORE` 数组。卷名称必须与 `docker-compose` 文件生成的卷名称相匹配。您可以使用 `docker volume ls` 来查看。
+
+### 1. 备份数据（源服务器）
+
+`backup.sh` 脚本将停止您的服务，并为指定的卷创建压缩的 `.tar.gz` 备份文件。
+
+```bash
+# 设置脚本执行权限
+chmod +x backup.sh
+
+# 运行备份脚本
+./backup.sh
+```
+
+脚本将会：
+
+1. 提示您选择要使用的配置文件：
+
+   * `docker-compose.yml`（默认）
+
+   * `docker-compose-tdgpt.yml`
+
+2. 使用选定的 compose 文件停止服务。
+
+3. 为脚本中定义的每个卷创建 `.tar.gz` 档案。
+
+4. 将备份存储在当前目录中。
+
+### 2. 恢复数据（目标服务器）
+
+`restore.sh` 脚本将把您的备份数据恢复到目标服务器上的新卷中。
+
+目标服务器的前置条件：
+
+* `restore.sh` 脚本文件。
+
+* 备份时使用的相同 compose 文件（例如 `docker-compose-tdgpt.yml`）。
+
+* 所有 `.tar.gz` 备份文件。
+
+* 所有文件必须在同一目录中。
+
+```bash
+# 设置脚本执行权限
+chmod +x restore.sh
+
+# 运行恢复脚本
+./restore.sh
+```
+
+脚本将会：
+
+1. 提示您选择备份时使用的配置文件。
+
+2. 运行 `docker compose up --no-start` 创建新的空卷。
+
+3. 将每个 `.tar.gz` 文件解包到对应的卷中。
+
+4. 以分离模式启动所有服务（`docker compose up -d`）。
+
+`IDMP`现在应该在新服务器上运行，并包含所有原始数据。
 
 ## 手动部署方式
 
