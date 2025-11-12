@@ -17,8 +17,23 @@ jobs:
 
       - name: Remove CI containers if exists
         run: |
-            cd /data1 
-            docker compose -f docker-compose-tdengine.yml down -v
+            echo "=== Stopping and removing all related containers ==="
+            
+            if [ -f /data1/docker-compose-tdengine.yml ]; then
+                echo "Cleaning up containers from /data1/docker-compose-tdengine.yml"
+                cd /data1 
+                docker compose -f docker-compose-tdengine.yml down -v 2>/dev/null || true
+            fi
+            
+            echo "Removing any remaining containers..."
+            docker ps -a --format '{{.Names}}' | grep -E '^(tdengine-idmp|tdengine-tsdb|tdengine-tdgpt|tdengine|tdgpt)$' | xargs -r docker rm -f 2>/dev/null || true
+
+            echo "=== Removing volumes ==="
+            docker volume ls -q | grep -E '(idmp|tsdb|tdengine)' | xargs -r docker volume rm 2>/dev/null || true
+            
+            echo "=== Removing networks ==="
+            docker network rm taos_net 2>/dev/null || true
+
       - name: Deploy TDengine-IDMP
         run: |
             cd docker
