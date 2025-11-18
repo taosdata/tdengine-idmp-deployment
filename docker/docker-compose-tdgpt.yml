@@ -70,7 +70,7 @@ services:
     networks:
       - taos_net
     healthcheck:
-      test: ["CMD", "sh", "-c", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:6042\").read()' && nc -z localhost 6038 && nc -z localhost 6039 && nc -z localhost 6040"]
+      test: ["CMD", "python3", "-c", "import socket; [socket.create_connection(('localhost', p), timeout=1).close() for p in [6042, 6038, 6039, 6040]]"]
       interval: 30s
       timeout: 10s
       retries: 3
