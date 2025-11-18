@@ -47,7 +47,7 @@ services:
       start_period: 30s
 
   tdengine-idmp:
-    image: tdengine/idmp-ee-amd64:1.0.7.1.1118
+    image: tdengine/idmp-ee-amd64:1.0.7.0.20251117
     container_name: tdengine-idmp
     restart: always
     depends_on:
