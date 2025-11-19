@@ -1,6 +1,6 @@
 services:
   tdengine-tdgpt:
-    image: tdengine/tdgpt:latest
+    image: tdengine/tdgpt-full:latest
     container_name: tdengine-tdgpt
     hostname: tdengine-tdgpt
     restart: always
