@@ -35,16 +35,25 @@ services:
       TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp:6042"
       QUARKUS_PROFILE: "${QUARKUS_PROFILE:-prod}"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
+      TDA_AI_CONN_ZH: ${TDA_AI_CONN_ZH:-DeepSeek}
+      TDA_AI_CONN_EN: ${TDA_AI_CONN_EN:-DeepSeek}
     ports:
-      - "6042:6042"
       - "6038:6038"
+      - "6042:6042"
     volumes:
       - idmp_data:/var/lib/taos
       - idmp_log:/var/log/taos
     networks:
       - taos_net
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6042').read()"]
+      test: [
+        "CMD",
+        "python3",
+        "-c",
+        "import urllib.request, socket; \
+        [urllib.request.urlopen(f'http://localhost:{p}', timeout=5) for p in [6038, 6042]]; \
+        [socket.create_connection(('localhost', p), timeout=1).close() for p in [6039, 6040]]"
+      ]
       interval: 30s
       timeout: 10s
       retries: 3
