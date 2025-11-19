@@ -1,6 +1,6 @@
 services:
   tdengine-tdgpt:
-    image: tdengine/tdgpt-full-amd64:latest
+    image: tdengine/tdgpt-full-arm64:latest
     container_name: tdengine-tdgpt
     hostname: tdengine-tdgpt
     restart: always
@@ -52,7 +52,7 @@ services:
       start_period: 30s
 
   tdengine-idmp:
-    image: tdengine/idmp-ee-amd64:latest
+    image: tdengine/idmp-ee-arm64:latest
     container_name: tdengine-idmp
     restart: always
     depends_on:
