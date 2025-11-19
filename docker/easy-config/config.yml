@@ -12,12 +12,6 @@ IDMP_CONFIG:
       username: root
       password: taosdata
       explorer-url: http://tdengine-tsdb:6060
-    analysis:
-      event:
-        urls: ${TDA_ANALYSIS_EVENT_URLS:ws://localhost:6042}
-        event-types:
-          - WINDOW_OPEN
-          - WINDOW_CLOSE
     phone-server-enabled: true
     easy-config:
       type: telegraf
