@@ -38,9 +38,19 @@ jobs:
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
+            # insert TDA_AI_CONN_* into tdengine-idmp environment blocks
+            awk '
+              /^  tdengine-idmp:/{print; in="idmp"; next}
+              /^  [^ ]/{in=""; print; next}
+              in=="idmp" && /^    environment:/{print;
+                print "      TDA_AI_CONN_ZH: \"${TDA_AI_CONN_ZH:-DeepSeek}\"";
+                print "      TDA_AI_CONN_EN: \"${TDA_AI_CONN_EN:-OpenAI}\"";
+                next}
+              {print}
+            ' docker-compose-tdgpt.yml > docker-compose-tdgpt.yml.tmp && mv docker-compose-tdgpt.yml.tmp docker-compose-tdgpt.yml
             QUARKUS_PROFILE=dev \
-            TDA_AI_CONN_ZH=deepseek \
-            TDA_AI_CONN_EN=deepseek \
+            TDA_AI_CONN_ZH=DeepSeek \
+            TDA_AI_CONN_EN=DeepSeek \
             docker compose -f docker-compose-tdgpt.yml up -d
             docker images | grep 'tdengine'
       - name: Checkout TDasset repository
