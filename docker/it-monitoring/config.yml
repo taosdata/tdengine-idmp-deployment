@@ -12,10 +12,10 @@ IDMP_CONFIG:
       username: root
       password: taosdata
       explorer-url: http://tdengine-tsdb:6060
+    default-tdengine-db-name: idmp # default database used for IDMP in each TDengine connection
     phone-server-enabled: true
     easy-config:
-      type: telegraf
 
 TDGPT_CONFIG:
-  enable: true
-  api_key: "abc123"
+  #enable: true
+  #api_key: "abc123"

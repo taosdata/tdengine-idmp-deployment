@@ -1,7 +1,7 @@
 #!/bin/bash
 
 idmp_url="http://localhost:6042"
-compose_file="docker-compose-easy-config.yml"
+compose_file="docker-compose-it-monitoring.yml"
 compose_cmd=""
 
 GREEN_DARK='\033[0;32m'
@@ -80,7 +80,7 @@ function check_docker_compose() {
 
 function select_compose_mode() {
   echo -e "${GREEN_DARK}Please select deployment mode:${NC}"
-  echo "1) Standard deployment (TSDB Enterprise + IDMP) (docker-compose.yml)"
+  echo "1) Standard deployment (TSDB Enterprise + IDMP) (docker-compose-it-monitoring.yml)"
   echo "2) Full deployment (TSDB Enterprise + IDMP + TDgpt) (docker-compose-tdgpt.yml)"
   
   while true; do
@@ -89,7 +89,7 @@ function select_compose_mode() {
     
     case "$mode_choice" in
       1)
-        compose_file="docker-compose.yml"
+        compose_file="docker-compose-it-monitoring.yml"
         log info "Selected: Standard deployment (TSDB Enterprise + IDMP)"
         break
         ;;
@@ -99,7 +99,7 @@ function select_compose_mode() {
         break
         ;;
       "")
-        compose_file="docker-compose.yml"
+        compose_file="docker-compose-it-monitoring.yml"
         log info "Using default: Standard deployment (TSDB Enterprise + IDMP)"
         break
         ;;
@@ -177,7 +177,7 @@ function detect_compose_file() {
     log info "Detected TDgpt containers, using: ${detected_file}"
   else
     if docker ps --format "table {{.Names}}" | grep -qE "tdengine-idmp|tdengine-tsdb"; then
-      detected_file="docker-compose.yml"
+      detected_file="docker-compose-it-monitoring.yml"
       log info "Detected standard deployment containers, using: ${detected_file}"
     else
       log warn "No IDMP related containers found"

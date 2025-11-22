@@ -23,7 +23,7 @@ services:
       retries: 5
       start_period: 30s
   tdengine-idmp:
-    image: tdengine/idmp-ee:latest
+    image: tdengine/idmp-it-amd64:1.0.7.1.202511220753
     container_name: tdengine-idmp
     restart: always
     depends_on:
@@ -32,6 +32,7 @@ services:
     environment:
       TZ: "${TZ:-UTC}"
       TSDB_URL: "http://tdengine-tsdb:6041"
+      VITE_MENU_TYPE: "it_monitoring"
       TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp:6042"
       QUARKUS_PROFILE: "external"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
@@ -42,6 +43,7 @@ services:
       - idmp_data:/var/lib/taos
       - idmp_log:/var/log/taos
       - ./application-external.yml:/usr/local/taos/idmp/config/application-external.yml
+      # - ./application.yml:/usr/local/taos/idmp/config/application.yml
     networks:
       - taos_net
     healthcheck:
