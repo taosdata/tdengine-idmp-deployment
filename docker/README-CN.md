@@ -107,7 +107,7 @@ docker compose down
 - **6041**: TDengine TSDB 企业版REST API 端口
 - **6060**: TDengine TSDB 企业版管理系统前端端口
 - **6042**: IDMP Web 前端端口
-- **8082**: IDMP h2  服务端口
+- **6038**: IDMP h2  服务端口
 
 ### 方式二：完整部署（包含 AI 功能）
 

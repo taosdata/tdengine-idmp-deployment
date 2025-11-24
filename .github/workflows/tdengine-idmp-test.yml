@@ -17,13 +17,31 @@ jobs:
 
       - name: Remove CI containers if exists
         run: |
-            cd /data1 
-            docker compose -f docker-compose-tdengine.yml down -v
+            echo "=== Stopping and removing all related containers ==="
+            
+            if [ -f /data1/docker-compose-tdengine.yml ]; then
+                echo "Cleaning up containers from /data1/docker-compose-tdengine.yml"
+                cd /data1 
+                docker compose -f docker-compose-tdengine.yml down -v 2>/dev/null || true
+            fi
+            
+            echo "Removing any remaining containers..."
+            docker ps -a --format '{{.Names}}' | grep -E '^(tdengine-idmp|tdengine-tsdb|tdengine-tdgpt|tdengine|tdgpt)$' | xargs -r docker rm -f 2>/dev/null || true
+
+            echo "=== Removing volumes ==="
+            docker volume ls -q | grep -E '(idmp|tsdb|tdengine)' | xargs -r docker volume rm 2>/dev/null || true
+            
+            echo "=== Removing networks ==="
+            docker network rm taos_net 2>/dev/null || true
+
       - name: Deploy TDengine-IDMP
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
-            QUARKUS_PROFILE=dev docker compose -f docker-compose-tdgpt.yml up -d
+            QUARKUS_PROFILE=dev \
+            TDA_AI_CONN_ZH=DeepSeek \
+            TDA_AI_CONN_EN=DeepSeek \
+            docker compose -f docker-compose-tdgpt.yml up -d
             docker images | grep 'tdengine'
       - name: Checkout TDasset repository
         uses: actions/checkout@v3
@@ -31,6 +49,7 @@ jobs:
             repository: taosdata/TDasset
             token: ${{ secrets.WORKFLOW_PAT }}
             path: TDasset
+            submodules: true
       - name: Run Playwright tests
         id: ui-test
         run: |
