@@ -1,15 +1,17 @@
 services:
-  tdengine-tsdb:
+  tdengine-tsdb-it:
     image: image.pre.cloud.taosdata.com/tdengine/tsdb-it:latest
     container_name: tdengine-tsdb
     hostname: tdengine
     restart: always
     environment:
       TZ: "${TZ:-UTC}"
+      TAOS_DISABLE_EXPLORER: "1"
+      TAOS_DISABLE_TAOSX: "1"
+      TAOS_DISABLE_KEEPER: "1"
     ports:
       - "6030:6030"
       - "6041:6041"
-      - "6060:6060"
     volumes:
       - tsdb_data:/var/lib/taos
       - tsdb_log:/var/log/taos
@@ -22,12 +24,12 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-  tdengine-idmp:
+  tdengine-idmp-it:
     image: image.pre.cloud.taosdata.com/tdengine/idmp-it:latest
-    container_name: tdengine-idmp
+    container_name: tdengine-idmp-it
     restart: always
     depends_on:
-      tdengine-tsdb:
+      tdengine-tsdb-it:
         condition: service_healthy
     environment:
       TZ: "${TZ:-UTC}"
