@@ -68,7 +68,7 @@ services:
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
     ports:
       - "6038:6038"
-      - "6037:6037"
+      - "26037:6037"
       - "6042:6042"
     volumes:
       - idmp_data:/var/lib/taos
