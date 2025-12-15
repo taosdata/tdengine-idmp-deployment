@@ -63,10 +63,10 @@ jobs:
             done
             pwd
             cd TDasset/frontend
-            pnpm i
+            pnpm i --no-frozen-lockfile
             pnpm run test:e2e:install
             NODE_ENV=ci pnpm run test:e2e 
-        
+
       - name: Send Feishu Message to Platform Alert Group
         if: failure()
         run: |
@@ -82,7 +82,7 @@ jobs:
             }
             EOF
             }
-            
+
             PR_INFO="TDengine-idmp Deployment Check 测试失败\n
             执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
 
