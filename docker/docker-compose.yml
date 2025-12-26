@@ -38,8 +38,8 @@ services:
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
     ports:
+      - "6034:6034"
       - "6038:6038"
-      - "6037:6037"
       - "6042:6042"
     volumes:
       - idmp_data:/var/lib/taos
