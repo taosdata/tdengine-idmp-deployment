@@ -25,7 +25,7 @@ services:
       start_period: 60s
 
   tdengine-tsdb:
-    image: tdengine/tsdb-ee:latest
+    image: tdengine/tsdb-ee-amd64:3.4.0.0
     container_name: tdengine-tsdb
     hostname: tdengine
     restart: always
