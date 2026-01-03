@@ -37,6 +37,7 @@ services:
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
+      TDA_REST_BASE_PATH: "${TDA_REST_BASE_PATH:-}"
     ports:
       - "6034:6034"
       - "6038:6038"
