@@ -38,6 +38,7 @@ jobs:
         run: |
             cd docker
             docker compose -f docker-compose-tdgpt.yml down -v
+            docker compose -f docker-compose-tdgpt.yml pull tdengine-tsdb tdengine-tdgpt
             QUARKUS_PROFILE=dev \
             TDA_AI_CONN_ZH=DeepSeek \
             TDA_AI_CONN_EN=DeepSeek \
