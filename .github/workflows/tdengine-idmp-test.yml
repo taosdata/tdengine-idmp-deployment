@@ -87,7 +87,7 @@ jobs:
             PR_INFO="TDengine-idmp Deployment Check 测试失败\n
             执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
 
-            #post_to_feishu "$PR_INFO"
+            post_to_feishu "$PR_INFO"
       - name: Send Feishu Message to Platform Notification Group
         if: success()
         run: |
@@ -107,7 +107,7 @@ jobs:
             PR_INFO="TDengine-idmp Deployment Check 测试成功\n
             执行的workflow见：https://github.com/taosdata/tdengine-idmp-deployment/actions/runs/${{ github.run_id }}\n"
 
-            #post_to_feishu "$PR_INFO"
+            post_to_feishu "$PR_INFO"
 
 
       - name: Save Test Report
