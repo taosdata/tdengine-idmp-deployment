@@ -85,13 +85,13 @@ function check_docker_memory() {
   mem_limit=$(docker info --format '{{.MemTotal}}')
   if [[ -z "$mem_limit" || "$mem_limit" -eq 0 ]]; then
     log warn "Unable to detect Docker memory limit, please ensure Docker is running."
-    return 1
+    exit 1
   fi
   local mem_gb=$((mem_limit / 1024 / 1024 / 1024))
   if (( mem_limit < MIN_DOCKER_MEMORY )); then
     log warn "Docker memory limit is less than 10GB (current: ${mem_gb}GB)."
     log warn "Please increase Docker's memory limit to at least 10GB and try again."
-    exit 0
+    exit 1
   else
     log info "Docker memory limit check passed: ${mem_gb}GB"
   fi
