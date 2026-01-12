@@ -3,6 +3,8 @@
 idmp_url="http://localhost:6042"
 compose_file="docker-compose.yml"
 compose_cmd=""
+need_check_memory=0
+MIN_DOCKER_MEMORY=10737418240  # 10GB in bytes
 
 GREEN_DARK='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -78,6 +80,23 @@ function check_docker_compose() {
   fi
 }
 
+function check_docker_memory() {
+  local mem_limit
+  mem_limit=$(docker info --format '{{.MemTotal}}')
+  if [[ -z "$mem_limit" || "$mem_limit" -eq 0 ]]; then
+    log warn "Unable to detect Docker memory limit, please ensure Docker is running."
+    return 1
+  fi
+  local mem_gb=$((mem_limit / 1024 / 1024 / 1024))
+  if (( mem_limit < MIN_DOCKER_MEMORY )); then
+    log warn "Docker memory limit is less than 10GB (current: ${mem_gb}GB)."
+    log warn "Please increase Docker's memory limit to at least 10GB and try again."
+    exit 0
+  else
+    log info "Docker memory limit check passed: ${mem_gb}GB"
+  fi
+}
+
 function select_compose_mode() {
   echo -e "${GREEN_DARK}Please select deployment mode:${NC}"
   echo "1) Standard deployment (TSDB Enterprise + IDMP) (docker-compose.yml)"
@@ -90,16 +109,19 @@ function select_compose_mode() {
     case "$mode_choice" in
       1)
         compose_file="docker-compose.yml"
+        need_check_memory=0
         log info "Selected: Standard deployment (TSDB Enterprise + IDMP)"
         break
         ;;
       2)
         compose_file="docker-compose-tdgpt.yml"
+        need_check_memory=1
         log info "Selected: Full deployment (TSDB Enterprise + IDMP + TDgpt)"
         break
         ;;
       "")
         compose_file="docker-compose.yml"
+        need_check_memory=0
         log info "Using default: Standard deployment (TSDB Enterprise + IDMP)"
         break
         ;;
@@ -151,6 +173,9 @@ function start_services() {
   setup_url
   export IDMP_URL=${idmp_url}
 
+  if [[ $need_check_memory -eq 1 ]]; then
+    check_docker_memory
+  fi
   log info "Starting services with ${compose_file}..."
   ${compose_cmd} -f "${compose_file}" up -d
   ret=$?
