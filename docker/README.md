@@ -103,10 +103,10 @@ docker compose down
 
 **Service Ports:**
 - **6030**: TDengine TSDB Enterprise client connection port
+- **6038**: IDMP h2 service port
 - **6041**: TDengine TSDB Enterprise REST API port
 - **6042**: IDMP Web frontend port
 - **6060**: TDengine TSDB Enterprise management system frontend port
-- **6038**: IDMP h2 service port
 
 ### Option 2: Full Deployment (With AI Features)
 
@@ -137,7 +137,15 @@ All services are configured with health check mechanisms to ensure services star
 - **TSDB Enterprise**: Checks database connection status
 - **IDMP**: Checks port 6042 availability
 
-## Image Configuration
+## Configurations
+
+### Environment Variables
+
+To customize the behavior of the services, you can set environment variables in the `.env` file by running following command first:
+
+```bash
+cp .env.example .env
+```
 
 ### TDgpt Image Versions
 

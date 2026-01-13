@@ -104,10 +104,10 @@ docker compose down
 
 **服务端口：**
 - **6030**: TDengine TSDB 企业版客户端连接端口
-- **6041**: TDengine TSDB 企业版REST API 端口
-- **6060**: TDengine TSDB 企业版管理系统前端端口
+- **6038**: IDMP h2 服务端口
+- **6041**: TDengine TSDB 企业版 REST API 端口
 - **6042**: IDMP Web 前端端口
-- **6038**: IDMP h2  服务端口
+- **6060**: TDengine TSDB 企业版管理系统前端端口
 
 ### 方式二：完整部署（包含 AI 功能）
 
@@ -138,7 +138,15 @@ docker compose -f docker-compose-tdgpt.yml down
 - **TSDB Enterprise**: 检查数据库连接状态
 - **IDMP**: 检查 6042 端口可用性
 
-## 镜像配置
+## 配置
+
+### 环境变量
+
+如果需要自定义服务的行为，可以在 `.env` 文件中设置环境变量。请先执行以下命令再编辑：
+
+```bash
+cp .env.example .env
+```
 
 ### TDgpt 镜像版本
 
@@ -157,4 +165,3 @@ services:
 - **开发环境**: 使用标准 `docker-compose.yml` 即可满足基本需求
 - **需要 AI 功能**: 使用 `docker-compose-tdgpt.yml` 获得完整功能
 - **生产环境**: 根据实际业务需求选择对应的配置文件
-
