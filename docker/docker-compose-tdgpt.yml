@@ -10,6 +10,7 @@ services:
       - "6035:6035"
       - "6036:6036"
       - "6037:6037"
+      - "6039:6039"
     networks:
       - taos_net
     healthcheck:
