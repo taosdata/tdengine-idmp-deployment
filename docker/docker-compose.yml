@@ -1,6 +1,6 @@
 services:
   tdengine-tsdb:
-    image: tdengine/tsdb-ee:${TSDB_TAG:-latest}
+    image: tdengine/tsdb-ee:3.3.8.8
     container_name: tdengine-tsdb
     hostname: tdengine
     restart: always
