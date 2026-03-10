@@ -35,7 +35,7 @@ services:
       TZ: "${TZ:-UTC}"
       TSDB_URL: "http://tdengine-tsdb:6041"
       VITE_MENU_TYPE: "it_monitoring"
-      TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp:6042"
+      TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp-it:6042"
       QUARKUS_PROFILE: "external"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
     ports:
