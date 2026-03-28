@@ -38,6 +38,7 @@ services:
       TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp-it:6042"
       QUARKUS_PROFILE: "external"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
+      AI_SERVER_URL: "http://tdengine-idmp-ai:6040"
     ports:
       - "6038:6038"
       - "6042:6042"
@@ -50,6 +51,29 @@ services:
       - taos_net
     healthcheck:
       test: [ "CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6042').read()" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  tdengine-idmp-ai:
+    image: tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}
+    container_name: tdengine-idmp-ai
+    restart: always
+    environment:
+      TZ: "${TZ:-UTC}"
+      IDMP_URL: "${IDMP_URL:-http://tdengine-idmp:6042}"
+      IDMP_JAVA_API_URL: "http://tdengine-idmp:6042/"
+      TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
+      TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
+    ports:
+      - "6040:6040"
+    volumes:
+      - idmp_data:/var/lib/taos
+      - idmp_log:/var/log/taos
+    networks:
+      - taos_net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6040' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
