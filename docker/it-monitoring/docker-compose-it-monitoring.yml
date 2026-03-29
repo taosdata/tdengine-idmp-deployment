@@ -39,6 +39,8 @@ services:
       QUARKUS_PROFILE: "external"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
       AI_SERVER_URL: "http://tdengine-idmp-ai:6040"
+      TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
+      TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
     ports:
       - "6038:6038"
       - "6042:6042"
