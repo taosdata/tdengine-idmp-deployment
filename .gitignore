@@ -1,2 +1,4 @@
 .env
 application-external.yml
+init-idmp-user.sql
+.idmp_token_value

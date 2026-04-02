@@ -7,10 +7,10 @@ IDMP_CONFIG:
     default-connection:
       connection-name: TDengine
       enable: true
-      auth-type: UserPassword
+      # username: TDengine 用户名（非 root 时自动创建用户并生成 Token）
+      # auth-type 和 password 由脚本自动设置（Token 模式 + 自动生成的 Token）
       url: http://tdengine-tsdb:6041
-      username: root
-      password: taosdata
+      username: telegraf
       explorer-url: http://tdengine-tsdb:6060
     default-tdengine-db-name: idmp # default database used for IDMP in each TDengine connection
     phone-server-enabled: true

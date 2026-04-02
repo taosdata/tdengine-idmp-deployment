@@ -16,6 +16,7 @@ services:
       - tsdb_data:/var/lib/taos
       - tsdb_log:/var/log/taos
       - ../init-anode.sql:/docker-entrypoint-initdb.d/init-anode.sql
+      - ./init-idmp-user.sql:/docker-entrypoint-initdb.d/init-idmp-user.sql
     networks:
       - taos_net
     healthcheck:
