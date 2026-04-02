@@ -250,8 +250,9 @@ function validate_and_generate_init_sql() {
             output_content=$(echo "$output_content" | awk '/^[[:space:]]*username:/{print; print "    auth-type: UserPassword"; next} 1')
         fi
         # 确保有 password 行
+        local root_pass="${TSDB_ROOT_PASS:-taosdata}"
         if ! echo "$output_content" | grep -q "^[[:space:]]*password:"; then
-            output_content=$(echo "$output_content" | awk '/^[[:space:]]*auth-type:/{print; print "    password: taosdata"; next} 1')
+            output_content=$(echo "$output_content" | awk -v pass="$root_pass" '/^[[:space:]]*auth-type:/{print; print "    password: " pass; next} 1')
         fi
         echo "root 用户: 使用 UserPassword 认证模式"
         # 清理可能残留的非 root 用户临时文件

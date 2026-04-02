@@ -4,6 +4,9 @@ idmp_url="http://localhost:6042"
 compose_file="docker-compose-it-monitoring.yml"
 compose_cmd=""
 
+TSDB_ROOT_USER="${TSDB_ROOT_USER:-root}"
+TSDB_ROOT_PASS="${TSDB_ROOT_PASS:-taosdata}"
+
 GREEN_DARK='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
@@ -156,7 +159,7 @@ function wait_for_tsdb() {
 
   log info "Waiting for TSDB to be ready..."
   while [[ $retry -lt $max_retries ]]; do
-    if curl -s -o /dev/null -w "%{http_code}" -u "root:taosdata" -d "show databases;" "${tsdb_url}/rest/sql" 2>/dev/null | grep -q "200"; then
+    if curl -s -o /dev/null -w "%{http_code}" -u "${TSDB_ROOT_USER}:${TSDB_ROOT_PASS}" -d "show databases;" "${tsdb_url}/rest/sql" 2>/dev/null | grep -q "200"; then
       log info "TSDB is ready!"
       return 0
     fi
@@ -189,7 +192,7 @@ function retrieve_and_inject_token() {
 
   # 检查 TDengine 中是否已存在该 token
   local show_resp
-  show_resp=$(curl -s -u "root:taosdata" -d "SHOW TOKENS;" "${tsdb_url}/rest/sql" 2>/dev/null)
+  show_resp=$(curl -s -u "${TSDB_ROOT_USER}:${TSDB_ROOT_PASS}" -d "SHOW TOKENS;" "${tsdb_url}/rest/sql" 2>/dev/null)
   local token_exists=0
   if echo "$show_resp" | grep -q "\"${token_name}\""; then
     token_exists=1
@@ -204,12 +207,12 @@ function retrieve_and_inject_token() {
     if [[ "$token_exists" -eq 1 ]]; then
       # token 存在但缓存丢失，需要先删除再重建（无法从 SHOW TOKENS 获取值）
       log warn "Token ${token_name} exists but cached value is missing, re-creating..."
-      curl -s -u "root:taosdata" -d "DROP TOKEN ${token_name};" "${tsdb_url}/rest/sql" >/dev/null 2>&1
+      curl -s -u "${TSDB_ROOT_USER}:${TSDB_ROOT_PASS}" -d "DROP TOKEN ${token_name};" "${tsdb_url}/rest/sql" >/dev/null 2>&1
     fi
 
     log info "Creating token for user: ${username}..."
     local response
-    response=$(curl -s -u "root:taosdata" -d "CREATE TOKEN ${token_name} FROM USER ${username};" "${tsdb_url}/rest/sql" 2>/dev/null)
+    response=$(curl -s -u "${TSDB_ROOT_USER}:${TSDB_ROOT_PASS}" -d "CREATE TOKEN ${token_name} FROM USER ${username};" "${tsdb_url}/rest/sql" 2>/dev/null)
 
     # 从 CREATE TOKEN 响应中解析 token 值
     # 优先使用 python3/python，Windows 降级用 powershell，最后用 grep
