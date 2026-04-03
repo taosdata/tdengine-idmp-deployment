@@ -9,6 +9,7 @@ IDMP_CONFIG:
       enable: true
       # username: TDengine 用户名（非 root 时自动创建用户并生成 Token）
       # auth-type 和 password 由脚本自动设置（Token 模式 + 自动生成的 Token）
+      auth-type: ${TSDB_AUTH_TYPE:TokenEnterprise}
       url: http://tdengine-tsdb:6041
       username: telegraf
       explorer-url: http://tdengine-tsdb:6060
