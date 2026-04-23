@@ -177,7 +177,7 @@ function start_services() {
     check_docker_memory
   fi
   log info "Starting services with ${compose_file}..."
-  ${compose_cmd} -f "${compose_file}" up -d
+  ${compose_cmd} -f "${compose_file}" up -d --pull always
   ret=$?
 
   if [[ ${ret} -eq 0 ]]; then
