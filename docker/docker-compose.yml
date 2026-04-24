@@ -6,6 +6,7 @@ services:
     restart: always
     environment:
       TZ: "${TZ:-UTC}"
+      EXPLORER_SKIP_REGISTER: "${EXPLORER_SKIP_REGISTER:-true}"
     ports:
       - "6030:6030"
       - "6041:6041"
