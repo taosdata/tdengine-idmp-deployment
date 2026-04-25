@@ -67,12 +67,12 @@ function parse_arguments() {
 }
 
 function check_docker_compose() {
-  if command -v docker-compose >/dev/null 2>&1; then
-    compose_cmd="docker-compose"
-    log info "Found docker-compose command"
-  elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     compose_cmd="docker compose"
     log info "Found docker compose plugin"
+  elif command -v docker-compose >/dev/null 2>&1 && docker-compose version >/dev/null 2>&1; then
+    compose_cmd="docker-compose"
+    log info "Found docker-compose command"
   else
     log error "Neither 'docker-compose' nor 'docker compose' command found!"
     log error "Please install Docker Compose first"
@@ -167,9 +167,108 @@ function setup_url() {
   log info "IDMP Server URL: ${idmp_url}"
 }
 
+function get_remote_digest() {
+  local repo="$1"
+  local tag="${2:-latest}"
+  local token
+  local digest
+
+  token=$(curl -sf --max-time 10 \
+    "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull" 2>/dev/null \
+    | grep -o '"token":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+  [[ -z "$token" ]] && return 0
+
+  digest=$(curl -sSI --max-time 10 \
+    -H "Authorization: Bearer ${token}" \
+    -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" \
+    "https://registry-1.docker.io/v2/${repo}/manifests/${tag}" 2>/dev/null \
+    | tr -d '\r' \
+    | grep -i '^Docker-Content-Digest:' | head -1 | cut -d' ' -f2)
+
+  echo "$digest"
+}
+
+function get_local_digest() {
+  local image="$1"
+  local digest
+  digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$image" 2>/dev/null | cut -d'@' -f2)
+  echo "$digest"
+}
+
+function check_and_upgrade_images() {
+  local images=()
+
+  [[ "${TSDB_TAG:-latest}" == "latest" ]] && images+=("tdengine/tsdb-ee:latest")
+  [[ "${IDMP_TAG:-latest}" == "latest" ]] && images+=("tdengine/idmp-ee:latest")
+  [[ "${IDMP_AI_TAG:-latest}" == "latest" ]] && images+=("tdengine/idmp-ai-ee:latest")
+  if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
+    [[ "${TDGPT_TAG:-latest}" == "latest" ]] && images+=("tdengine/tdgpt-full:latest")
+  fi
+
+  [[ ${#images[@]} -eq 0 ]] && return 0
+
+  log info "Checking for image updates..."
+
+  local outdated=()
+  local image_ref
+  for image_ref in "${images[@]}"; do
+    local repo="${image_ref%:*}"
+    local tag="${image_ref#*:}"
+
+    if ! docker image inspect "$image_ref" >/dev/null 2>&1; then
+      log info "  ${image_ref}: not pulled locally yet, will pull on start"
+      continue
+    fi
+
+    local local_digest
+    local_digest=$(get_local_digest "$image_ref")
+    [[ -z "$local_digest" ]] && continue
+
+    local remote_digest
+    remote_digest=$(get_remote_digest "$repo" "$tag")
+    if [[ -z "$remote_digest" ]]; then
+      log warn "Could not check updates for ${image_ref} (network issue), skipping."
+      continue
+    fi
+
+    if [[ "$local_digest" != "$remote_digest" ]]; then
+      outdated+=("$image_ref")
+    fi
+  done
+
+  if [[ ${#outdated[@]} -eq 0 ]]; then
+    log info "All images are up to date."
+    return 0
+  fi
+
+  echo -e "${YELLOW}The following images have updates available:${NC}"
+  for img in "${outdated[@]}"; do
+    echo "  - $img"
+  done
+
+  while true; do
+    printf "%b" "${GREEN_DARK}Do you want to upgrade to the latest images? [Y/n] ${NC}"
+    read -r upgrade_choice
+    if [[ -z "$upgrade_choice" || "$upgrade_choice" =~ ^[Yy]$ ]]; then
+      for img in "${outdated[@]}"; do
+        log info "Pulling ${img}..."
+        docker pull "$img"
+      done
+      break
+    elif [[ "$upgrade_choice" =~ ^[Nn]$ ]]; then
+      log info "Skipping upgrade, using existing images."
+      break
+    else
+      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
+    fi
+  done
+}
+
 function start_services() {
   check_docker_compose
   select_compose_mode
+  check_and_upgrade_images
   setup_url
   export IDMP_URL=${idmp_url}
 
@@ -177,7 +276,7 @@ function start_services() {
     check_docker_memory
   fi
   log info "Starting services with ${compose_file}..."
-  ${compose_cmd} -f "${compose_file}" up -d --pull always
+  ${compose_cmd} -f "${compose_file}" up -d
   ret=$?
 
   if [[ ${ret} -eq 0 ]]; then
