@@ -167,11 +167,32 @@ function setup_url() {
   log info "IDMP Server URL: ${idmp_url}"
 }
 
+function apply_default_env() {
+  export TZ="${TZ:-UTC}"
+  export QUARKUS_PROFILE="${QUARKUS_PROFILE:-prod}"
+  export TDA_AI_CONN_ZH="${TDA_AI_CONN_ZH:-DeepSeek}"
+  export TDA_AI_CONN_EN="${TDA_AI_CONN_EN:-OpenAI}"
+  export TDA_REST_BASE_PATH="${TDA_REST_BASE_PATH:-}"
+
+  if [[ "${compose_file}" == "docker-compose-tdgpt.yml" ]]; then
+    export TDGPT_TAG="${TDGPT_TAG:-3.4.1.0}"
+    export TSDB_TAG="${TSDB_TAG:-3.4.1.5}"
+    export IDMP_TAG="${IDMP_TAG:-1.0.16.3}"
+    export IDMP_AI_TAG="${IDMP_AI_TAG:-1.0.16.2}"
+  else
+    export TSDB_TAG="${TSDB_TAG:-latest}"
+    export IDMP_TAG="${IDMP_TAG:-latest}"
+    export IDMP_AI_TAG="${IDMP_AI_TAG:-latest}"
+  fi
+
+  export IDMP_URL="${idmp_url}"
+}
+
 function start_services() {
   check_docker_compose
   select_compose_mode
   setup_url
-  export IDMP_URL=${idmp_url}
+  apply_default_env
 
   if [[ $need_check_memory -eq 1 ]]; then
     check_docker_memory

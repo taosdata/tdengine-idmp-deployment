@@ -1,11 +1,11 @@
 services:
   tdengine-tdgpt:
-    image: tdengine/tdgpt-full:${TDGPT_TAG:-latest}
+    image: tdengine/tdgpt-amd64:${TDGPT_TAG}
     container_name: tdengine-tdgpt
     hostname: tdengine-tdgpt
     restart: always
     environment:
-      TZ: "${TZ:-UTC}"
+      TZ: "${TZ}"
     ports:
       - "6035:6035"
       - "6036:6036"
@@ -25,13 +25,12 @@ services:
       start_period: 60s
 
   tdengine-tsdb:
-    image: tdengine/tsdb-ee:${TSDB_TAG:-latest}
+    image: tdengine/tsdb-ee-amd64:${TSDB_TAG}
     container_name: tdengine-tsdb
     hostname: tdengine
     restart: always
     environment:
-      TZ: "${TZ:-UTC}"
-      EXPLORER_SKIP_REGISTER: "${EXPLORER_SKIP_REGISTER:-true}"
+      TZ: "${TZ}"
     ports:
       - "6030:6030"
       - "6041:6041"
@@ -53,22 +52,22 @@ services:
       start_period: 30s
 
   tdengine-idmp:
-    image: tdengine/idmp-ee:${IDMP_TAG:-latest}
+    image: tdengine/idmp-ee-amd64:${IDMP_TAG}
     container_name: tdengine-idmp
     restart: always
     depends_on:
       tdengine-tsdb:
         condition: service_healthy
     environment:
-      TZ: "${TZ:-UTC}"
+      TZ: "${TZ}"
       TSDB_URL: "http://tdengine-tsdb:6041"
       TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp:6042"
-      QUARKUS_PROFILE: "${QUARKUS_PROFILE:-prod}"
-      IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
-      TDA_REST_BASE_PATH: "${TDA_REST_BASE_PATH:-}"
+      QUARKUS_PROFILE: "${QUARKUS_PROFILE}"
+      IDMP_URL: "${IDMP_URL}"
+      TDA_REST_BASE_PATH: "${TDA_REST_BASE_PATH}"
       AI_SERVER_URL: "http://tdengine-idmp-ai:6040"
-      TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
-      TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
+      TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH}"
+      TDA_AI_CONN_EN: "${TDA_AI_CONN_EN}"
     ports:
       - "6034:6034"
       - "6038:6038"
@@ -86,15 +85,15 @@ services:
       start_period: 30s
 
   tdengine-idmp-ai:
-    image: tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}
+    image: tdengine/idmp-ai-ee-amd64:${IDMP_AI_TAG}
     container_name: tdengine-idmp-ai
     restart: always
     environment:
-      TZ: "${TZ:-UTC}"
-      IDMP_URL: "${IDMP_URL:-http://tdengine-idmp:6042}"
+      TZ: "${TZ}"
+      IDMP_URL: "${IDMP_URL}"
       IDMP_JAVA_API_URL: "http://tdengine-idmp:6042/"
-      TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
-      TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
+      TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH}"
+      TDA_AI_CONN_EN: "${TDA_AI_CONN_EN}"
     ports:
       - "6040:6040"
     volumes:
