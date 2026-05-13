@@ -32,6 +32,7 @@ services:
     environment:
       TZ: "${TZ:-UTC}"
       EXPLORER_SKIP_REGISTER: "${EXPLORER_SKIP_REGISTER:-true}"
+      TAOS_FQDN: "${TAOS_FQDN:-tdengine-tsdb}"
     ports:
       - "6030:6030"
       - "6041:6041"
