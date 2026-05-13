@@ -1,6 +1,6 @@
 services:
   tdengine-tdgpt:
-    image: tdengine/tdgpt-full:latest
+    image: tdengine/tdgpt-full:${TDGPT_TAG:-latest}
     container_name: tdengine-tdgpt
     hostname: tdengine-tdgpt
     restart: always
@@ -25,12 +25,14 @@ services:
       start_period: 60s
 
   tdengine-tsdb:
-    image: tdengine/tsdb-ee:latest
+    image: tdengine/tsdb-ee:${TSDB_TAG:-latest}
     container_name: tdengine-tsdb
     hostname: tdengine
     restart: always
     environment:
       TZ: "${TZ:-UTC}"
+      EXPLORER_SKIP_REGISTER: "${EXPLORER_SKIP_REGISTER:-true}"
+      TAOS_FQDN: "${TAOS_FQDN:-tdengine-tsdb}"
     ports:
       - "6030:6030"
       - "6041:6041"
@@ -51,12 +53,33 @@ services:
       retries: 5
       start_period: 30s
 
+  tdengine-redis:
+    image: redis:${REDIS_TAG:-7}
+    container_name: tdengine-redis
+    restart: always
+    environment:
+      TZ: "${TZ:-UTC}"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - taos_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   tdengine-idmp:
-    image: tdengine/idmp-ee:latest
+    image: tdengine/idmp-ee:${IDMP_TAG:-latest}
     container_name: tdengine-idmp
     restart: always
     depends_on:
       tdengine-tsdb:
+        condition: service_healthy
+      tdengine-redis:
         condition: service_healthy
     environment:
       TZ: "${TZ:-UTC}"
@@ -64,9 +87,11 @@ services:
       TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp:6042"
       QUARKUS_PROFILE: "${QUARKUS_PROFILE:-prod}"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
+      TDA_REST_BASE_PATH: "${TDA_REST_BASE_PATH:-}"
+      AI_SERVER_URL: "http://tdengine-idmp-ai:6040"
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
-      TDA_REST_BASE_PATH: "${TDA_REST_BASE_PATH:-}"
+      QUARKUS_REDIS_HOSTS: "redis://tdengine-redis:6379"
     ports:
       - "6034:6034"
       - "6038:6038"
@@ -77,14 +102,31 @@ services:
     networks:
       - taos_net
     healthcheck:
-      test: [
-        "CMD",
-        "python3",
-        "-c",
-        "import urllib.request, socket; \
-        [urllib.request.urlopen(f'http://localhost:{p}', timeout=5) for p in [6038, 6042]]; \
-        [socket.create_connection(('localhost', p), timeout=1).close() for p in [6039, 6040]]"
-      ]
+      test: ["CMD-SHELL", "curl -sf http://localhost:6042/q/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  tdengine-idmp-ai:
+    image: tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}
+    container_name: tdengine-idmp-ai
+    restart: always
+    environment:
+      TZ: "${TZ:-UTC}"
+      IDMP_URL: "${IDMP_URL:-http://tdengine-idmp:6042}"
+      IDMP_JAVA_API_URL: "http://tdengine-idmp:6042/"
+      TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
+      TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
+    ports:
+      - "6040:6040"
+    volumes:
+      - idmp_data:/var/lib/taos
+      - idmp_log:/var/log/taos
+    networks:
+      - taos_net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6040' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -102,4 +144,6 @@ volumes:
   idmp_data:
     driver: local
   idmp_log:
+    driver: local
+  redis_data:
     driver: local
