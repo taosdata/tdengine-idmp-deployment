@@ -101,11 +101,11 @@ function select_compose_mode() {
   echo -e "${GREEN_DARK}Please select deployment mode:${NC}"
   echo "1) Standard deployment (TSDB Enterprise + IDMP) (docker-compose.yml)"
   echo "2) Full deployment (TSDB Enterprise + IDMP + TDgpt) (docker-compose-tdgpt.yml)"
-  
+
   while true; do
     printf "%b" "${GREEN_DARK}Enter your choice [1-2]: ${NC}"
     read -r mode_choice
-    
+
     case "$mode_choice" in
       1)
         compose_file="docker-compose.yml"
@@ -265,11 +265,30 @@ function check_and_upgrade_images() {
   done
 }
 
+function ask_git_enable() {
+  while true; do
+    printf "%b" "${GREEN_DARK}Do you want to enable git version control? [y/N] ${NC}"
+    read -r git_choice
+    if [[ -z "$git_choice" || "$git_choice" =~ ^[Nn]$ ]]; then
+      export TDA_GIT_ENABLE=false
+      log info "Git version control disabled."
+      break
+    elif [[ "$git_choice" =~ ^[Yy]$ ]]; then
+      export TDA_GIT_ENABLE=true
+      log info "Git version control enabled."
+      break
+    else
+      echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
+    fi
+  done
+}
+
 function start_services() {
   check_docker_compose
   select_compose_mode
   check_and_upgrade_images
   setup_url
+  ask_git_enable
   export IDMP_URL=${idmp_url}
 
   if [[ $need_check_memory -eq 1 ]]; then
@@ -289,12 +308,12 @@ function start_services() {
 
 function detect_compose_file() {
   local detected_file=""
-  
+
   if ! docker ps -q | grep -q .; then
     log warn "No running containers found"
     return 1
   fi
-  
+
   if docker ps --format "table {{.Names}}" | grep -q "tdengine-tdgpt"; then
     detected_file="docker-compose-tdgpt.yml"
     log info "Detected TDgpt containers, using: ${detected_file}"
@@ -307,19 +326,19 @@ function detect_compose_file() {
       return 1
     fi
   fi
-  
+
   compose_file="$detected_file"
   return 0
 }
 
 function stop_services() {
   check_docker_compose
-  
+
   if ! detect_compose_file; then
     log warn "Could not detect any running IDMP services."
     return
   fi
-  
+
   log info "Stopping services with ${compose_file}..."
   while true; do
     printf "%b" "${GREEN_DARK}Do you want to clear data and logs? [y/N] ${NC}"

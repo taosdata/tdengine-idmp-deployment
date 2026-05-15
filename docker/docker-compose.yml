@@ -41,6 +41,7 @@ services:
       AI_SERVER_URL: "http://tdengine-idmp-ai:6040"
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
+      TDA_GIT_ENABLE: "${TDA_GIT_ENABLE:-false}"
     ports:
       - "6034:6034"
       - "6038:6038"
