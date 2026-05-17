@@ -14,6 +14,7 @@ RUN apt-get update \
         python3.12 \
         python3.12-venv \
         fontconfig \
+        git \
         locales \
         tzdata \
         procps \
