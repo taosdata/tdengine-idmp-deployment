@@ -204,6 +204,7 @@ function check_and_upgrade_images() {
   [[ "${IDMP_AI_TAG:-latest}" == "latest" ]] && images+=("tdengine/idmp-ai-ee:latest")
   if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
     [[ "${TDGPT_TAG:-latest}" == "latest" ]] && images+=("tdengine/tdgpt-full:latest")
+    [[ "${TDMODEL_TAG:-latest}" == "latest" ]] && images+=("tdengine/tdmodel:latest")
   fi
 
   [[ ${#images[@]} -eq 0 ]] && return 0

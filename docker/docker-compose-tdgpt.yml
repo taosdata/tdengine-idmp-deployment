@@ -111,6 +111,30 @@ services:
       retries: 3
       start_period: 30s
 
+  tdengine-model:
+    image: tdengine/tdmodel:${TDMODEL_TAG:-latest}
+    container_name: tdengine-model
+    restart: always
+    depends_on:
+      tdengine-tsdb:
+        condition: service_healthy
+    environment:
+      TDMODEL_TSDB_HOST: "${TDMODEL_TSDB_HOST:-http://tdengine-tsdb}"
+      TDMODEL_TSDB_PORT: "${TDMODEL_TSDB_PORT:-6041}"
+    ports:
+      - "6036:6036"
+    volumes:
+      - tdmodel_data:/var/lib/taos
+      - tdmodel_log:/var/log/taos
+    networks:
+      - taos_net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6036' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 networks:
   taos_net:
     driver: bridge
@@ -123,4 +147,8 @@ volumes:
   idmp_data:
     driver: local
   idmp_log:
+    driver: local
+  tdmodel_data:
+    driver: local
+  tdmodel_log:
     driver: local
