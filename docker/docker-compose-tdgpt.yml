@@ -8,8 +8,8 @@ services:
       TZ: "${TZ:-UTC}"
     ports:
       - "6035:6035"
-      - "6036:6036"
-      - "6037:6037"
+      - "6061:6061"
+      - "6062:6062"
     networks:
       - taos_net
     healthcheck:
@@ -119,7 +119,7 @@ services:
       tdengine-tsdb:
         condition: service_healthy
     environment:
-      TDMODEL_TSDB_HOST: "${TDMODEL_TSDB_HOST:-http://tdengine-tsdb}"
+      TDMODEL_TSDB_HOST: "${TDMODEL_TSDB_HOST:-tdengine-tsdb}"
       TDMODEL_TSDB_PORT: "${TDMODEL_TSDB_PORT:-6041}"
     ports:
       - "6036:6036"
