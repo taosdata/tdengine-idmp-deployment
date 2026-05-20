@@ -71,6 +71,7 @@ services:
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
       TDA_GIT_ENABLE: "${TDA_GIT_ENABLE:-false}"
+      TDA_MODEL_SERVICE_URL : "${TDA_MODEL_SERVICE_URL:-http://tdengine-model:6036}"
     ports:
       - "6034:6034"
       - "6038:6038"
