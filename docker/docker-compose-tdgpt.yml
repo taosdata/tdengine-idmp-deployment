@@ -119,6 +119,7 @@ services:
       tdengine-tsdb:
         condition: service_healthy
     environment:
+      TZ: "${TZ:-UTC}"
       TDMODEL_TSDB_HOST: "${TDMODEL_TSDB_HOST:-tdengine-tsdb}"
       TDMODEL_TSDB_PORT: "${TDMODEL_TSDB_PORT:-6041}"
     ports:
