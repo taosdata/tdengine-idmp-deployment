@@ -8,8 +8,8 @@ services:
       TZ: "${TZ:-UTC}"
     ports:
       - "6035:6035"
-      - "6036:6036"
-      - "6037:6037"
+      - "6061:6061"
+      - "6062:6062"
     networks:
       - taos_net
     healthcheck:
@@ -72,6 +72,7 @@ services:
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
       TDA_GIT_ENABLE: "${TDA_GIT_ENABLE:-false}"
+      TDA_MODEL_SERVICE_URL : "${TDA_MODEL_SERVICE_URL:-http://tdengine-model:6036}"
     ports:
       - "6034:6034"
       - "6038:6038"
@@ -112,6 +113,31 @@ services:
       retries: 3
       start_period: 30s
 
+  tdengine-model:
+    image: tdengine/tdmodel:${TDMODEL_TAG:-latest}
+    container_name: tdengine-model
+    restart: always
+    depends_on:
+      tdengine-tsdb:
+        condition: service_healthy
+    environment:
+      TZ: "${TZ:-UTC}"
+      TDMODEL_TSDB_HOST: "${TDMODEL_TSDB_HOST:-tdengine-tsdb}"
+      TDMODEL_TSDB_PORT: "${TDMODEL_TSDB_PORT:-6041}"
+    ports:
+      - "6036:6036"
+    volumes:
+      - tdmodel_data:/var/lib/taos
+      - tdmodel_log:/var/log/taos
+    networks:
+      - taos_net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6036' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 networks:
   taos_net:
     driver: bridge
@@ -124,4 +150,8 @@ volumes:
   idmp_data:
     driver: local
   idmp_log:
+    driver: local
+  tdmodel_data:
+    driver: local
+  tdmodel_log:
     driver: local
