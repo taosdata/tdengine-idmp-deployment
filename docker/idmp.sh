@@ -268,18 +268,18 @@ function check_and_upgrade_images() {
 
 function ask_git_enable() {
   while true; do
-    printf "%b" "${GREEN_DARK}Do you want to enable git version control? [y/N] ${NC}"
+    printf "%b" "${GREEN_DARK}Do you want to disable git version control (experimental)? [Y/n] ${NC}"
     read -r git_choice
-    if [[ -z "$git_choice" || "$git_choice" =~ ^[Nn]$ ]]; then
+    if [[ -z "$git_choice" || "$git_choice" =~ ^[Yy]$ ]]; then
       export TDA_GIT_ENABLE=false
       log info "Git version control disabled."
       break
-    elif [[ "$git_choice" =~ ^[Yy]$ ]]; then
+    elif [[ "$git_choice" =~ ^[Nn]$ ]]; then
       export TDA_GIT_ENABLE=true
       log info "Git version control enabled."
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
+      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y, y disables).${NC}"
     fi
   done
 }
