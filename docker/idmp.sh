@@ -189,11 +189,9 @@ function get_remote_digest() {
   echo "$digest"
 }
 
-function get_local_digest() {
+function get_local_digests() {
   local image="$1"
-  local digest
-  digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$image" 2>/dev/null | cut -d'@' -f2)
-  echo "$digest"
+  docker inspect --format='{{range .RepoDigests}}{{println .}}{{end}}' "$image" 2>/dev/null | cut -d'@' -f2
 }
 
 function check_and_upgrade_images() {
@@ -222,9 +220,9 @@ function check_and_upgrade_images() {
       continue
     fi
 
-    local local_digest
-    local_digest=$(get_local_digest "$image_ref")
-    [[ -z "$local_digest" ]] && continue
+    local local_digests
+    local_digests=$(get_local_digests "$image_ref")
+    [[ -z "$local_digests" ]] && continue
 
     local remote_digest
     remote_digest=$(get_remote_digest "$repo" "$tag")
@@ -233,7 +231,7 @@ function check_and_upgrade_images() {
       continue
     fi
 
-    if [[ "$local_digest" != "$remote_digest" ]]; then
+    if ! grep -Fxq "$remote_digest" <<< "$local_digests"; then
       outdated+=("$image_ref")
     fi
   done
