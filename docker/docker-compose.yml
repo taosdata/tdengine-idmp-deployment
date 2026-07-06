@@ -20,7 +20,7 @@ services:
       - taos_net
     healthcheck:
       test: ["CMD", "taos", "-h", "localhost", "-s", "show databases;"]
-      interval: 30s
+      interval: 90s
       timeout: 60s
       retries: 5
       start_period: 30s
