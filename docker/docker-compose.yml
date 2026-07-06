@@ -19,7 +19,7 @@ services:
     networks:
       - taos_net
     healthcheck:
-      test: ["CMD", "taos", "-h", "localhost", "-s", "show databases;"]
+      test: ["CMD-SHELL", "curl -s -m 5 -u root:taosdata 'http://localhost:6041/rest/sql' -d 'show databases' | grep -q '\"code\":0' || exit 1"]
       interval: 90s
       timeout: 60s
       retries: 5
