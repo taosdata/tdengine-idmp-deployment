@@ -3,6 +3,7 @@
 idmp_url="http://localhost:6042"
 compose_file="docker-compose.yml"
 compose_cmd=""
+compose_supports_pull_policy=0
 need_check_memory=0
 MIN_DOCKER_MEMORY=10737418240  # 10GB in bytes
 
@@ -31,6 +32,7 @@ function show_help() {
   echo -e "\nCommands:"
   echo -e "  start\t\t\tStart the IDMP services"
   echo -e "  stop\t\t\tStop the IDMP services"
+  echo -e "  clean\t\t\tClean the current IDMP environment"
 
   echo -e "\nOptions:"
   echo -e "  -h, --help\t\tShow this help message"
@@ -38,6 +40,7 @@ function show_help() {
   echo -e "\nExamples:"
   echo -e "  $0 start\t# Start with interactive mode"
   echo -e "  $0 stop\t# Stop services"
+  echo -e "  $0 clean\t# Remove current services, volumes, and images"
 }
 
 function parse_arguments() {
@@ -49,7 +52,7 @@ function parse_arguments() {
 
   while [[ $# -gt 0 ]]; do
     case $1 in
-      start|stop)
+      start|stop|clean)
         action="$1"
         shift
         ;;
@@ -69,9 +72,11 @@ function parse_arguments() {
 function check_docker_compose() {
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     compose_cmd="docker compose"
+    compose_supports_pull_policy=1
     log info "Found docker compose plugin"
   elif command -v docker-compose >/dev/null 2>&1 && docker-compose version >/dev/null 2>&1; then
     compose_cmd="docker-compose"
+    compose_supports_pull_policy=0
     log info "Found docker-compose command"
   else
     log error "Neither 'docker-compose' nor 'docker compose' command found!"
@@ -167,96 +172,58 @@ function setup_url() {
   log info "IDMP Server URL: ${idmp_url}"
 }
 
-function get_remote_digest() {
-  local repo="$1"
-  local tag="${2:-latest}"
-  local token
-  local digest
-
-  token=$(curl -sf --max-time 10 \
-    "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull" 2>/dev/null \
-    | grep -o '"token":"[^"]*"' | head -1 | cut -d'"' -f4)
-
-  [[ -z "$token" ]] && return 0
-
-  digest=$(curl -sSI --max-time 10 \
-    -H "Authorization: Bearer ${token}" \
-    -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" \
-    "https://registry-1.docker.io/v2/${repo}/manifests/${tag}" 2>/dev/null \
-    | tr -d '\r' \
-    | grep -i '^Docker-Content-Digest:' | head -1 | cut -d' ' -f2)
-
-  echo "$digest"
-}
-
-function get_local_digests() {
-  local image="$1"
-  docker inspect --format='{{range .RepoDigests}}{{println .}}{{end}}' "$image" 2>/dev/null | cut -d'@' -f2
-}
-
 function check_and_upgrade_images() {
   local images=()
 
-  [[ "${TSDB_TAG:-latest}" == "latest" ]] && images+=("tdengine/tsdb-ee:latest")
-  [[ "${IDMP_TAG:-latest}" == "latest" ]] && images+=("tdengine/idmp-ee:latest")
-  [[ "${IDMP_AI_TAG:-latest}" == "latest" ]] && images+=("tdengine/idmp-ai-ee:latest")
+  images+=("tdengine/tsdb-ee:${TSDB_TAG:-latest}")
+  images+=("tdengine/idmp-ee:${IDMP_TAG:-latest}")
+  images+=("tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}")
   if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
-    [[ "${TDGPT_TAG:-latest}" == "latest" ]] && images+=("tdengine/tdgpt-full:latest")
-    [[ "${TDMODEL_TAG:-latest}" == "latest" ]] && images+=("tdengine/tdmodel:latest")
+    images+=("tdengine/tdgpt-full:${TDGPT_TAG:-latest}")
+    images+=("tdengine/tdmodel:${TDMODEL_TAG:-latest}")
   fi
 
-  [[ ${#images[@]} -eq 0 ]] && return 0
+  log info "Checking local images..."
 
-  log info "Checking for image updates..."
-
-  local outdated=()
+  local missing_images=()
+  local existing_images=()
   local image_ref
   for image_ref in "${images[@]}"; do
-    local repo="${image_ref%:*}"
-    local tag="${image_ref#*:}"
-
     if ! docker image inspect "$image_ref" >/dev/null 2>&1; then
-      log info "  ${image_ref}: not pulled locally yet, will pull on start"
+      missing_images+=("$image_ref")
       continue
     fi
 
-    local local_digests
-    local_digests=$(get_local_digests "$image_ref")
-    [[ -z "$local_digests" ]] && continue
-
-    local remote_digest
-    remote_digest=$(get_remote_digest "$repo" "$tag")
-    if [[ -z "$remote_digest" ]]; then
-      log warn "Could not check updates for ${image_ref} (network issue), skipping."
-      continue
-    fi
-
-    if ! grep -Fxq "$remote_digest" <<< "$local_digests"; then
-      outdated+=("$image_ref")
-    fi
+    existing_images+=("$image_ref")
   done
 
-  if [[ ${#outdated[@]} -eq 0 ]]; then
-    log info "All images are up to date."
-    return 0
+  if [[ ${#missing_images[@]} -gt 0 ]]; then
+    echo -e "${YELLOW}The following images do not exist locally and will be pulled by Docker Compose on start:${NC}"
+    for image_ref in "${missing_images[@]}"; do
+      echo "  - $image_ref"
+    done
   fi
 
-  echo -e "${YELLOW}The following images have updates available:${NC}"
-  for img in "${outdated[@]}"; do
-    echo "  - $img"
+  [[ ${#existing_images[@]} -eq 0 ]] && return 0
+
+  echo -e "${YELLOW}The following images already exist locally:${NC}"
+  for image_ref in "${existing_images[@]}"; do
+    echo "  - $image_ref"
   done
 
   while true; do
-    printf "%b" "${GREEN_DARK}Do you want to upgrade to the latest images? [Y/n] ${NC}"
+    printf "%b" "${GREEN_DARK}Do you want to update existing images? [Y/n] ${NC}"
     read -r upgrade_choice
     if [[ -z "$upgrade_choice" || "$upgrade_choice" =~ ^[Yy]$ ]]; then
-      for img in "${outdated[@]}"; do
-        log info "Pulling ${img}..."
-        docker pull "$img"
-      done
+      log info "Pulling latest images with Docker Compose..."
+      if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
+        ${compose_cmd} -f "${compose_file}" pull --policy always
+      else
+        ${compose_cmd} -f "${compose_file}" pull
+      fi
       break
     elif [[ "$upgrade_choice" =~ ^[Nn]$ ]]; then
-      log info "Skipping upgrade, using existing images."
+      log info "Skipping update, using existing images."
       break
     else
       echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
@@ -294,7 +261,11 @@ function start_services() {
     check_docker_memory
   fi
   log info "Starting services with ${compose_file}..."
-  ${compose_cmd} -f "${compose_file}" up -d
+  if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
+    ${compose_cmd} -f "${compose_file}" up -d --pull missing
+  else
+    ${compose_cmd} -f "${compose_file}" up -d
+  fi
   ret=$?
 
   if [[ ${ret} -eq 0 ]]; then
@@ -364,6 +335,127 @@ function stop_services() {
   fi
 }
 
+function clean_environment() {
+  local images=()
+  local candidate_images=()
+  local compose_files=()
+  local container_names=()
+  local volume_names=()
+  local network_names=("taos_net")
+  local compose_file_ref
+  local container_name
+  local volume_name
+  local network_name
+  local image_ref
+  local existing_image
+  local image_exists
+  local ret
+
+  check_docker_compose
+  select_compose_mode
+
+  compose_files=("$compose_file")
+  container_names=("tdengine-tsdb" "tdengine-idmp" "tdengine-idmp-ai")
+  volume_names=("tsdb_data" "tsdb_log" "idmp_data" "idmp_log")
+  candidate_images=(
+    "tdengine/tsdb-ee:${TSDB_TAG:-latest}"
+    "tdengine/idmp-ee:${IDMP_TAG:-latest}"
+    "tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}"
+  )
+
+  if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
+    container_names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp" "tdengine-idmp-ai" "tdengine-model")
+    volume_names+=("tdmodel_data" "tdmodel_log")
+    candidate_images+=(
+      "tdengine/tdgpt-full:${TDGPT_TAG:-latest}"
+      "tdengine/tdmodel:${TDMODEL_TAG:-latest}"
+    )
+  fi
+
+  for container_name in "${container_names[@]}"; do
+    image_ref=$(docker inspect --format='{{.Config.Image}}' "$container_name" 2>/dev/null)
+    if [[ -n "$image_ref" ]]; then
+      candidate_images+=("$image_ref")
+    fi
+  done
+
+  for image_ref in "${candidate_images[@]}"; do
+    [[ -z "$image_ref" ]] && continue
+    if docker image inspect "$image_ref" >/dev/null 2>&1; then
+      image_exists=0
+      for existing_image in "${images[@]}"; do
+        if [[ "$existing_image" == "$image_ref" ]]; then
+          image_exists=1
+          break
+        fi
+      done
+      [[ ${image_exists} -eq 0 ]] && images+=("$image_ref")
+    fi
+  done
+
+  echo -e "${YELLOW}This will remove containers, volumes, and images for the IDMP environment.${NC}"
+  echo -e "${YELLOW}Compose files used:${NC}"
+  for compose_file_ref in "${compose_files[@]}"; do
+    echo "  - $compose_file_ref"
+  done
+
+  echo -e "${YELLOW}Containers managed by this environment:${NC}"
+  for container_name in "${container_names[@]}"; do
+    echo "  - $container_name"
+  done
+
+  echo -e "${YELLOW}Compose volumes to remove:${NC}"
+  for volume_name in "${volume_names[@]}"; do
+    echo "  - $volume_name"
+  done
+
+  echo -e "${YELLOW}Compose networks to remove:${NC}"
+  for network_name in "${network_names[@]}"; do
+    echo "  - $network_name"
+  done
+
+  if [[ ${#images[@]} -gt 0 ]]; then
+    echo -e "${YELLOW}The following images will be removed:${NC}"
+    for image_ref in "${images[@]}"; do
+      echo "  - $image_ref"
+    done
+  else
+    log info "No local IDMP images found to remove."
+  fi
+
+  while true; do
+    printf "%b" "${GREEN_DARK}Do you want to clean the entire current environment? [y/N] ${NC}"
+    read -r clean_choice
+    if [[ "$clean_choice" =~ ^[Yy]$ ]]; then
+      break
+    elif [[ -z "$clean_choice" || "$clean_choice" =~ ^[Nn]$ ]]; then
+      log info "Clean canceled."
+      return
+    else
+      echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
+    fi
+  done
+
+  for compose_file_ref in "${compose_files[@]}"; do
+    log info "Removing services and volumes with ${compose_file_ref}..."
+    ${compose_cmd} -f "${compose_file_ref}" down -v
+    ret=$?
+    if [[ ${ret} -ne 0 ]]; then
+      log error "Failed to remove services and volumes with ${compose_file_ref}. Please check the logs."
+      return
+    fi
+  done
+
+  for image_ref in "${images[@]}"; do
+    log info "Removing image ${image_ref}..."
+    if ! docker image rm "$image_ref"; then
+      log warn "Failed to remove image ${image_ref}, it may not exist or may still be in use."
+    fi
+  done
+
+  log info "Current IDMP environment cleaned successfully!"
+}
+
 # main
 parse_arguments "$@"
 
@@ -374,6 +466,9 @@ case "${action}" in
     ;;
   stop)
     stop_services
+    ;;
+  clean)
+    clean_environment
     ;;
   *)
     log error "Unknown action: ${action}"
