@@ -54,9 +54,9 @@ services:
       retries: 5
       start_period: 30s
 
-  tdengine-idmp:
-    image: tdengine/idmp-ee:${IDMP_TAG:-latest}
-    container_name: tdengine-idmp
+  tdengine-idmp-backend:
+    image: tdengine/idmp-backend-ee:${IDMP_TAG:-latest}
+    container_name: tdengine-idmp-backend
     restart: always
     depends_on:
       tdengine-tsdb:
@@ -66,7 +66,7 @@ services:
     environment:
       TZ: "${TZ:-UTC}"
       TSDB_URL: "http://tdengine-tsdb:6041"
-      TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp:6042"
+      TDA_ANALYSIS_EVENT_URLS: "ws://tdengine-idmp-backend:6042"
       QUARKUS_PROFILE: "${QUARKUS_PROFILE:-prod}"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
       TDA_REST_BASE_PATH: "${TDA_REST_BASE_PATH:-}"
@@ -75,11 +75,9 @@ services:
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
       TDA_GIT_ENABLE: "${TDA_GIT_ENABLE:-false}"
-      TDA_MODEL_SERVICE_URL : "${TDA_MODEL_SERVICE_URL:-http://tdengine-model:6036}"
+      TDA_MODEL_SERVICE_URL: "${TDA_MODEL_SERVICE_URL:-http://tdengine-model:6036}"
     ports:
-      - "6034:6034"
       - "6038:6038"
-      - "6042:6042"
     volumes:
       - idmp_data:/var/lib/taos
       - idmp_log:/var/log/taos
@@ -92,14 +90,39 @@ services:
       retries: 3
       start_period: 30s
 
+  tdengine-idmp-ui:
+    image: tdengine/idmp-ui-ee:${IDMP_TAG:-latest}
+    container_name: tdengine-idmp-ui
+    restart: always
+    depends_on:
+      tdengine-idmp-backend:
+        condition: service_healthy
+    environment:
+      TZ: "${TZ:-UTC}"
+      IDMP_BACKEND_UPSTREAM: "${IDMP_BACKEND_UPSTREAM:-tdengine-idmp-backend:6042}"
+    ports:
+      - "6042:80"
+      - "6034:443"
+    volumes:
+      - idmp_data:/var/lib/taos
+      - idmp_log:/var/log/taos
+    networks:
+      - taos_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ >/dev/null && wget --no-check-certificate -qO- https://127.0.0.1:443/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   tdengine-idmp-ai:
     image: tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}
     container_name: tdengine-idmp-ai
     restart: always
     environment:
       TZ: "${TZ:-UTC}"
-      IDMP_URL: "${IDMP_URL:-http://tdengine-idmp:6042}"
-      IDMP_JAVA_API_URL: "http://tdengine-idmp:6042/"
+      IDMP_URL: "${IDMP_URL:-http://tdengine-idmp-backend:6042}"
+      IDMP_JAVA_API_URL: "http://tdengine-idmp-backend:6042/"
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
     ports:

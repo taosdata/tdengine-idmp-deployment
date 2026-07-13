@@ -176,7 +176,8 @@ function check_and_upgrade_images() {
   local images=()
 
   images+=("tdengine/tsdb-ee:${TSDB_TAG:-latest}")
-  images+=("tdengine/idmp-ee:${IDMP_TAG:-latest}")
+  images+=("tdengine/idmp-backend-ee:${IDMP_TAG:-latest}")
+  images+=("tdengine/idmp-ui-ee:${IDMP_TAG:-latest}")
   images+=("tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}")
   images+=("tdengine/cls:${CLS_TAG:-latest}")
   if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
@@ -289,7 +290,7 @@ function detect_compose_file() {
     detected_file="docker-compose-tdgpt.yml"
     log info "Detected TDgpt containers, using: ${detected_file}"
   else
-    if docker ps --format "table {{.Names}}" | grep -qE "tdengine-idmp|tdengine-tsdb|tdengine-cls"; then
+    if docker ps --format "table {{.Names}}" | grep -qE "tdengine-idmp-backend|tdengine-idmp-ui|tdengine-tsdb|tdengine-cls"; then
       detected_file="docker-compose.yml"
       log info "Detected standard deployment containers, using: ${detected_file}"
     else
@@ -356,17 +357,18 @@ function clean_environment() {
   select_compose_mode
 
   compose_files=("$compose_file")
-  container_names=("tdengine-tsdb" "tdengine-idmp" "tdengine-idmp-ai" "tdengine-cls")
+  container_names=("tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-cls")
   volume_names=("tsdb_data" "tsdb_log" "idmp_data" "idmp_log" "cls_data" "cls_log")
   candidate_images=(
     "tdengine/tsdb-ee:${TSDB_TAG:-latest}"
-    "tdengine/idmp-ee:${IDMP_TAG:-latest}"
+    "tdengine/idmp-backend-ee:${IDMP_TAG:-latest}"
+    "tdengine/idmp-ui-ee:${IDMP_TAG:-latest}"
     "tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}"
     "tdengine/cls:${CLS_TAG:-latest}"
   )
 
   if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
-    container_names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp" "tdengine-idmp-ai" "tdengine-model" "tdengine-cls")
+    container_names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-model" "tdengine-cls")
     volume_names+=("tdmodel_data" "tdmodel_log")
     candidate_images+=(
       "tdengine/tdgpt-full:${TDGPT_TAG:-latest}"
