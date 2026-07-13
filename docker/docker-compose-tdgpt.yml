@@ -79,7 +79,7 @@ services:
     ports:
       - "6038:6038"
     volumes:
-      - idmp_data:/var/lib/taos
+      - idmp_data:/var/lib/taos/idmp
       - idmp_log:/var/log/taos
     networks:
       - taos_net
@@ -104,7 +104,7 @@ services:
       - "6042:80"
       - "6034:443"
     volumes:
-      - idmp_data:/var/lib/taos
+      - idmp_data:/var/lib/taos/idmp
       - idmp_log:/var/log/taos
     networks:
       - taos_net
@@ -128,7 +128,7 @@ services:
     ports:
       - "6040:6040"
     volumes:
-      - idmp_data:/var/lib/taos
+      - idmp_data:/var/lib/taos/idmp
       - idmp_log:/var/log/taos
     networks:
       - taos_net
