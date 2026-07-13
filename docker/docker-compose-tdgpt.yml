@@ -61,6 +61,8 @@ services:
     depends_on:
       tdengine-tsdb:
         condition: service_healthy
+      tdengine-cls:
+        condition: service_healthy
     environment:
       TZ: "${TZ:-UTC}"
       TSDB_URL: "http://tdengine-tsdb:6041"
@@ -68,6 +70,7 @@ services:
       QUARKUS_PROFILE: "${QUARKUS_PROFILE:-prod}"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
       TDA_REST_BASE_PATH: "${TDA_REST_BASE_PATH:-}"
+      TDA_LICENSE_SERVER_ADDR: "${TDA_LICENSE_SERVER_ADDR:-http://tdengine-cls:6072}"
       AI_SERVER_URL: "http://tdengine-idmp-ai:6040"
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
@@ -138,6 +141,27 @@ services:
       retries: 3
       start_period: 30s
 
+  tdengine-cls:
+    image: tdengine/cls:${CLS_TAG:-latest}
+    container_name: tdengine-cls
+    restart: always
+    environment:
+      TZ: "${TZ:-UTC}"
+    ports:
+      - "6072:6072"
+      - "6073:6073"
+    volumes:
+      - cls_data:/var/lib/taoscls
+      - cls_log:/var/log/taoscls
+    networks:
+      - taos_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:6072/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 networks:
   taos_net:
     driver: bridge
@@ -154,4 +178,8 @@ volumes:
   tdmodel_data:
     driver: local
   tdmodel_log:
+    driver: local
+  cls_data:
+    driver: local
+  cls_log:
     driver: local
