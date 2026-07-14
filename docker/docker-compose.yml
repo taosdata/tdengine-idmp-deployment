@@ -41,7 +41,7 @@ services:
       QUARKUS_PROFILE: "${QUARKUS_PROFILE:-prod}"
       IDMP_URL: "${IDMP_URL:-http://localhost:6042}"
       TDA_REST_BASE_PATH: "${TDA_REST_BASE_PATH:-}"
-      TDA_LICENSE_SERVER_ADDR: "${TDA_LICENSE_SERVER_ADDR:-http://tdengine-cls:6072}"
+      TDA_LICENSE_SERVER_ADDR: "${TDA_LICENSE_SERVER_ADDR:-http://tdengine-cls:6059}"
       AI_SERVER_URL: "http://tdengine-idmp-ai:6040"
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
@@ -123,7 +123,7 @@ services:
     networks:
       - taos_net
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:6072/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:6059/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
