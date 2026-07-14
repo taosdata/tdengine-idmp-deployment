@@ -1,6 +1,7 @@
 #!/bin/bash
 
 idmp_url="http://localhost:6042"
+license_server_addr="http://localhost:6059"
 compose_file="docker-compose.yml"
 compose_cmd=""
 compose_supports_pull_policy=0
@@ -172,6 +173,32 @@ function setup_url() {
   log info "IDMP Server URL: ${idmp_url}"
 }
 
+function setup_license_server_addr() {
+  # Default to the same host as IDMP URL, port 6059
+  if [[ "$idmp_url" =~ ^(https?://[^:/]+)(:[0-9]+)?(/.*)?$ ]]; then
+    license_server_addr="${BASH_REMATCH[1]}:6059"
+  else
+    license_server_addr="http://localhost:6059"
+  fi
+
+  while true; do
+    printf "%b" "${GREEN_DARK}Do you want to use this URL for license server ? ${license_server_addr} [Y/n] ${NC}"
+    read -r use_default_license
+    if [[ -z "$use_default_license" || "$use_default_license" =~ ^[Yy]$ ]]; then
+      break
+    elif [[ "$use_default_license" =~ ^[Nn]$ ]]; then
+      printf "%b" "${GREEN_DARK}Please input license server URL (http://<ip>:6059): ${NC}"
+      read -r new_license_server_addr
+      license_server_addr="${new_license_server_addr:-$license_server_addr}"
+      break
+    else
+      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
+    fi
+  done
+
+  log info "License Server URL: ${license_server_addr}"
+}
+
 function check_and_upgrade_images() {
   local images=()
 
@@ -256,8 +283,10 @@ function start_services() {
   select_compose_mode
   check_and_upgrade_images
   setup_url
+  setup_license_server_addr
   ask_git_enable
   export IDMP_URL=${idmp_url}
+  export TDA_LICENSE_SERVER_ADDR=${license_server_addr}
 
   if [[ $need_check_memory -eq 1 ]]; then
     check_docker_memory
@@ -273,6 +302,7 @@ function start_services() {
   if [[ ${ret} -eq 0 ]]; then
     log info "Services started successfully!"
     log info "IDMP Web Console: ${idmp_url}"
+    log info "License Server: ${license_server_addr}"
   else
     echo -e "${YELLOW}Failed to start services. Please check the logs.${NC}"
   fi

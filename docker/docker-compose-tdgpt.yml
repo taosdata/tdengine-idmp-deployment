@@ -171,8 +171,7 @@ services:
     environment:
       TZ: "${TZ:-UTC}"
     ports:
-      - "6072:6072"
-      - "6073:6073"
+      - "6059:6059"
     volumes:
       - cls_data:/var/lib/taoscls
       - cls_log:/var/log/taoscls
