@@ -6,6 +6,7 @@ compose_file="docker-compose.yml"
 compose_cmd=""
 compose_supports_pull_policy=0
 need_check_memory=0
+mode_from_cli=0
 MIN_DOCKER_MEMORY=10737418240  # 10GB in bytes
 
 GREEN_DARK='\033[0;32m'
@@ -36,12 +37,35 @@ function show_help() {
   echo -e "  clean\t\t\tClean the current IDMP environment"
 
   echo -e "\nOptions:"
+  echo -e "  --mode MODE\t\tDeployment mode: 1|standard or 2|full (skip interactive prompt)"
   echo -e "  -h, --help\t\tShow this help message"
 
   echo -e "\nExamples:"
-  echo -e "  $0 start\t# Start with interactive mode"
-  echo -e "  $0 stop\t# Stop services"
-  echo -e "  $0 clean\t# Remove current services, volumes, and images"
+  echo -e "  $0 start\t\t\t# Start with interactive mode"
+  echo -e "  $0 start --mode full\t\t# Start Full deployment (TSDB + IDMP + TDgpt + CLS + TDModel)"
+  echo -e "  $0 start --mode 2\t\t# Same as --mode full"
+  echo -e "  $0 start --mode standard\t# Start Standard deployment (TSDB + IDMP)"
+  echo -e "  $0 stop\t\t\t# Stop services"
+  echo -e "  $0 clean --mode full\t\t# Clean Full deployment environment"
+}
+
+function apply_deploy_mode() {
+  case "$1" in
+    1|standard)
+      compose_file="docker-compose.yml"
+      need_check_memory=0
+      log info "Selected: Standard deployment (TSDB Enterprise + IDMP)"
+      ;;
+    2|full)
+      compose_file="docker-compose-tdgpt.yml"
+      need_check_memory=1
+      log info "Selected: Full deployment (TSDB Enterprise + IDMP + TDgpt + CLS + TDModel)"
+      ;;
+    *)
+      log error "Invalid mode: $1 (use 1|standard or 2|full)"
+      exit 1
+      ;;
+  esac
 }
 
 function parse_arguments() {
@@ -55,6 +79,20 @@ function parse_arguments() {
     case $1 in
       start|stop|clean)
         action="$1"
+        shift
+        ;;
+      --mode)
+        if [[ -z "${2:-}" ]]; then
+          log error "--mode requires a value: 1|standard or 2|full"
+          exit 1
+        fi
+        apply_deploy_mode "$2"
+        mode_from_cli=1
+        shift 2
+        ;;
+      --mode=*)
+        apply_deploy_mode "${1#*=}"
+        mode_from_cli=1
         shift
         ;;
       -h|--help)
@@ -104,31 +142,25 @@ function check_docker_memory() {
 }
 
 function select_compose_mode() {
+  if [[ ${mode_from_cli} -eq 1 ]]; then
+    return
+  fi
+
   echo -e "${GREEN_DARK}Please select deployment mode:${NC}"
   echo "1) Standard deployment (TSDB Enterprise + IDMP) (docker-compose.yml)"
-  echo "2) Full deployment (TSDB Enterprise + IDMP + TDgpt) (docker-compose-tdgpt.yml)"
+  echo "2) Full deployment (TSDB Enterprise + IDMP + TDgpt + CLS + TDModel) (docker-compose-tdgpt.yml)"
 
   while true; do
     printf "%b" "${GREEN_DARK}Enter your choice [1-2]: ${NC}"
     read -r mode_choice
 
     case "$mode_choice" in
-      1)
-        compose_file="docker-compose.yml"
-        need_check_memory=0
-        log info "Selected: Standard deployment (TSDB Enterprise + IDMP)"
+      1|"")
+        apply_deploy_mode "1"
         break
         ;;
       2)
-        compose_file="docker-compose-tdgpt.yml"
-        need_check_memory=1
-        log info "Selected: Full deployment (TSDB Enterprise + IDMP + TDgpt)"
-        break
-        ;;
-      "")
-        compose_file="docker-compose.yml"
-        need_check_memory=0
-        log info "Using default: Standard deployment (TSDB Enterprise + IDMP)"
+        apply_deploy_mode "2"
         break
         ;;
       *)
@@ -278,6 +310,41 @@ function ask_git_enable() {
   done
 }
 
+function setup_timezone() {
+  # Keep explicit TZ from environment or .env if already set
+  if [[ -n "${TZ:-}" ]]; then
+    export TZ
+    log info "Using existing TZ: ${TZ}"
+    return
+  fi
+
+  local detected_tz=""
+
+  if [[ -f /etc/timezone ]]; then
+    detected_tz=$(tr -d '[:space:]' < /etc/timezone)
+  fi
+
+  if [[ -z "$detected_tz" && -L /etc/localtime ]]; then
+    local tz_path
+    tz_path=$(readlink -f /etc/localtime 2>/dev/null || readlink /etc/localtime 2>/dev/null || true)
+    if [[ "$tz_path" == *"/zoneinfo/"* ]]; then
+      detected_tz="${tz_path##*/zoneinfo/}"
+    fi
+  fi
+
+  if [[ -z "$detected_tz" ]] && command -v timedatectl >/dev/null 2>&1; then
+    detected_tz=$(timedatectl show -p Timezone --value 2>/dev/null || true)
+  fi
+
+  if [[ -z "$detected_tz" ]]; then
+    detected_tz="UTC"
+    log warn "Unable to detect system timezone, falling back to UTC"
+  fi
+
+  export TZ="${detected_tz}"
+  log info "Timezone set to: ${TZ}"
+}
+
 function start_services() {
   check_docker_compose
   select_compose_mode
@@ -285,6 +352,7 @@ function start_services() {
   setup_url
   setup_license_server_addr
   ask_git_enable
+  setup_timezone
   export IDMP_URL=${idmp_url}
   export TDA_LICENSE_SERVER_ADDR=${license_server_addr}
 
