@@ -310,6 +310,41 @@ function ask_git_enable() {
   done
 }
 
+function setup_timezone() {
+  # Keep explicit TZ from environment or .env if already set
+  if [[ -n "${TZ:-}" ]]; then
+    export TZ
+    log info "Using existing TZ: ${TZ}"
+    return
+  fi
+
+  local detected_tz=""
+
+  if [[ -f /etc/timezone ]]; then
+    detected_tz=$(tr -d '[:space:]' < /etc/timezone)
+  fi
+
+  if [[ -z "$detected_tz" && -L /etc/localtime ]]; then
+    local tz_path
+    tz_path=$(readlink -f /etc/localtime 2>/dev/null || readlink /etc/localtime 2>/dev/null || true)
+    if [[ "$tz_path" == *"/zoneinfo/"* ]]; then
+      detected_tz="${tz_path##*/zoneinfo/}"
+    fi
+  fi
+
+  if [[ -z "$detected_tz" ]] && command -v timedatectl >/dev/null 2>&1; then
+    detected_tz=$(timedatectl show -p Timezone --value 2>/dev/null || true)
+  fi
+
+  if [[ -z "$detected_tz" ]]; then
+    detected_tz="UTC"
+    log warn "Unable to detect system timezone, falling back to UTC"
+  fi
+
+  export TZ="${detected_tz}"
+  log info "Timezone set to: ${TZ}"
+}
+
 function start_services() {
   check_docker_compose
   select_compose_mode
@@ -317,6 +352,7 @@ function start_services() {
   setup_url
   setup_license_server_addr
   ask_git_enable
+  setup_timezone
   export IDMP_URL=${idmp_url}
   export TDA_LICENSE_SERVER_ADDR=${license_server_addr}
 
