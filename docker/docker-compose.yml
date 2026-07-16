@@ -46,6 +46,7 @@ services:
       TDA_AI_CONN_ZH: "${TDA_AI_CONN_ZH:-DeepSeek}"
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
       TDA_GIT_ENABLE: "${TDA_GIT_ENABLE:-false}"
+      TDA_ALL_IN_ONE: "${TDA_ALL_IN_ONE:-true}"
     ports:
       - "6038:6038"
     volumes:
