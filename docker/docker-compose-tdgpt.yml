@@ -54,6 +54,49 @@ services:
       retries: 5
       start_period: 30s
 
+  # Runs after TSDB + TDgpt are healthy.
+  tdengine-create-anode:
+    image: tdengine/tsdb-ee:${TSDB_TAG:-latest}
+    container_name: tdengine-create-anode
+    restart: "on-failure"
+    depends_on:
+      tdengine-tsdb:
+        condition: service_healthy
+      tdengine-tdgpt:
+        condition: service_healthy
+    environment:
+      TZ: "${TZ:-UTC}"
+      TAOS_ROOT_PASSWORD: "${TAOS_ROOT_PASSWORD:-taosdata}"
+    networks:
+      - taos_net
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        ANODE_URL="tdengine-tdgpt:6035"
+        echo "Ensuring anode $${ANODE_URL} is registered..."
+        for i in $$(seq 1 30); do
+          show_out=$$(curl -s -m 10 -u "root:$${TAOS_ROOT_PASSWORD}" \
+            -d 'show anodes' \
+            http://tdengine-tsdb:6041/rest/sql || true)
+          if echo "$${show_out}" | grep -q "$${ANODE_URL}"; then
+            echo "Anode already exists: $${ANODE_URL}"
+            exit 0
+          fi
+
+          create_out=$$(curl -s -m 10 -u "root:$${TAOS_ROOT_PASSWORD}" \
+            -d "create anode \"$${ANODE_URL}\"" \
+            http://tdengine-tsdb:6041/rest/sql || true)
+          echo "create anode attempt $${i}: $${create_out}"
+          if echo "$${create_out}" | grep -q '"code":0'; then
+            echo "Anode created successfully: $${ANODE_URL}"
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "Failed to create anode after retries"
+        exit 1
+
   tdengine-idmp-backend:
     image: tdengine/idmp-backend-ee:${IDMP_TAG:-latest}
     container_name: tdengine-idmp-backend
@@ -76,6 +119,7 @@ services:
       TDA_AI_CONN_EN: "${TDA_AI_CONN_EN:-OpenAI}"
       TDA_GIT_ENABLE: "${TDA_GIT_ENABLE:-false}"
       TDA_MODEL_SERVICE_URL: "${TDA_MODEL_SERVICE_URL:-http://tdengine-model:6036}"
+      TDA_ALL_IN_ONE: "${TDA_ALL_IN_ONE:-true}"
     ports:
       - "6038:6038"
     volumes:
@@ -154,6 +198,7 @@ services:
       - "6036:6036"
     volumes:
       - tdmodel_data:/var/lib/taos
+      - tdmodel_mysql:/var/lib/mysql
       - tdmodel_log:/var/log/taos
     networks:
       - taos_net
@@ -198,6 +243,8 @@ volumes:
   idmp_log:
     driver: local
   tdmodel_data:
+    driver: local
+  tdmodel_mysql:
     driver: local
   tdmodel_log:
     driver: local

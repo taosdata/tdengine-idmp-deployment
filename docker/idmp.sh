@@ -359,12 +359,18 @@ function start_services() {
   if [[ $need_check_memory -eq 1 ]]; then
     check_docker_memory
   fi
-  log info "Starting services with ${compose_file}..."
-  if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
-    ${compose_cmd} -f "${compose_file}" up -d --pull missing
-  else
-    ${compose_cmd} -f "${compose_file}" up -d
+
+  local up_args=(-f "${compose_file}" up -d)
+  if compose_services_exist; then
+    log info "Existing services detected, forcing recreate..."
+    up_args+=(--force-recreate)
   fi
+  if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
+    up_args+=(--pull missing)
+  fi
+
+  log info "Starting services with ${compose_file}..."
+  ${compose_cmd} "${up_args[@]}"
   ret=$?
 
   if [[ ${ret} -eq 0 ]]; then
@@ -374,6 +380,23 @@ function start_services() {
   else
     echo -e "${YELLOW}Failed to start services. Please check the logs.${NC}"
   fi
+}
+
+function compose_services_exist() {
+  local names=()
+  if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
+    names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-model" "tdengine-cls")
+  else
+    names=("tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-cls")
+  fi
+
+  local name
+  for name in "${names[@]}"; do
+    if docker ps -a --format '{{.Names}}' | grep -qx "$name"; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 function detect_compose_file() {
@@ -467,7 +490,7 @@ function clean_environment() {
 
   if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
     container_names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-model" "tdengine-cls")
-    volume_names+=("tdmodel_data" "tdmodel_log")
+    volume_names+=("tdmodel_data" "tdmodel_mysql" "tdmodel_log")
     candidate_images+=(
       "tdengine/tdgpt-full:${TDGPT_TAG:-latest}"
       "tdengine/tdmodel:${TDMODEL_TAG:-latest}"

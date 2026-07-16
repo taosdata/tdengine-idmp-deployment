@@ -582,6 +582,63 @@ function Ask-GitEnable {
   }
 }
 
+function Setup-Timezone {
+  # Keep explicit TZ from environment or .env if already set
+  if (-not [string]::IsNullOrWhiteSpace($env:TZ)) {
+    Write-Log info "Using existing TZ: $($env:TZ)"
+    return
+  }
+
+  $detectedTz = $null
+
+  # .NET 6+ / PowerShell 7+: convert Windows timezone ID to IANA
+  try {
+    $ianaId = $null
+    $ok = [TimeZoneInfo]::TryConvertWindowsIdToIanaId([TimeZoneInfo]::Local.Id, [ref]$ianaId)
+    if ($ok -and -not [string]::IsNullOrWhiteSpace($ianaId)) {
+      $detectedTz = $ianaId
+    }
+  }
+  catch {
+    # Method unavailable on older .NET / Windows PowerShell 5.1
+  }
+
+  # Common Windows -> IANA fallbacks for Windows PowerShell 5.1
+  if ([string]::IsNullOrWhiteSpace($detectedTz)) {
+    $windowsToIana = @{
+      "China Standard Time"           = "Asia/Shanghai"
+      "Taipei Standard Time"          = "Asia/Taipei"
+      "Tokyo Standard Time"           = "Asia/Tokyo"
+      "Korea Standard Time"           = "Asia/Seoul"
+      "Singapore Standard Time"       = "Asia/Singapore"
+      "SE Asia Standard Time"         = "Asia/Bangkok"
+      "India Standard Time"           = "Asia/Kolkata"
+      "GMT Standard Time"             = "Europe/London"
+      "W. Europe Standard Time"       = "Europe/Berlin"
+      "Central Europe Standard Time"  = "Europe/Budapest"
+      "Romance Standard Time"         = "Europe/Paris"
+      "Russian Standard Time"         = "Europe/Moscow"
+      "Eastern Standard Time"         = "America/New_York"
+      "Central Standard Time"         = "America/Chicago"
+      "Mountain Standard Time"        = "America/Denver"
+      "Pacific Standard Time"         = "America/Los_Angeles"
+      "UTC"                           = "UTC"
+    }
+    $windowsId = [TimeZoneInfo]::Local.Id
+    if ($windowsToIana.ContainsKey($windowsId)) {
+      $detectedTz = $windowsToIana[$windowsId]
+    }
+  }
+
+  if ([string]::IsNullOrWhiteSpace($detectedTz)) {
+    $detectedTz = "UTC"
+    Write-Log warn "Unable to detect system timezone, falling back to UTC"
+  }
+
+  $env:TZ = $detectedTz
+  Write-Log info "Timezone set to: $($env:TZ)"
+}
+
 function Start-Services {
   Check-DockerCompose
   Select-ComposeMode
@@ -589,6 +646,7 @@ function Start-Services {
   Setup-Url
   Setup-LicenseServerAddr
   Ask-GitEnable
+  Setup-Timezone
 
   $env:IDMP_URL = $script:IdmpUrl
   $env:TDA_LICENSE_SERVER_ADDR = $script:LicenseServerAddr
@@ -597,13 +655,18 @@ function Start-Services {
     Check-DockerMemory
   }
 
-  Write-Log info "Starting services with $($script:ComposeFile)..."
+  $upArgs = [System.Collections.Generic.List[string]]::new()
+  $upArgs.AddRange([string[]]@("-f", $script:ComposeFile, "up", "-d"))
+  if (Test-ComposeServicesExist) {
+    Write-Log info "Existing services detected, forcing recreate..."
+    $upArgs.Add("--force-recreate") | Out-Null
+  }
   if ($script:ComposeSupportsPullPolicy) {
-    $ret = Invoke-Compose -ComposeArgs @("-f", $script:ComposeFile, "up", "-d", "--pull", "missing")
+    $upArgs.AddRange([string[]]@("--pull", "missing"))
   }
-  else {
-    $ret = Invoke-Compose -ComposeArgs @("-f", $script:ComposeFile, "up", "-d")
-  }
+
+  Write-Log info "Starting services with $($script:ComposeFile)..."
+  $ret = Invoke-Compose -ComposeArgs $upArgs.ToArray()
 
   if ($ret -eq 0) {
     Write-Log info "Services started successfully!"
@@ -613,6 +676,49 @@ function Start-Services {
   else {
     Write-Host "Failed to start services. Please check the logs." -ForegroundColor Yellow
   }
+}
+
+function Test-ComposeServicesExist {
+  if ($script:ComposeFile -eq "docker-compose-tdgpt.yml") {
+    $names = @(
+      "tdengine-tdgpt"
+      "tdengine-tsdb"
+      "tdengine-idmp-backend"
+      "tdengine-idmp-ui"
+      "tdengine-idmp-ai"
+      "tdengine-model"
+      "tdengine-cls"
+    )
+  }
+  else {
+    $names = @(
+      "tdengine-tsdb"
+      "tdengine-idmp-backend"
+      "tdengine-idmp-ui"
+      "tdengine-idmp-ai"
+      "tdengine-cls"
+    )
+  }
+
+  $result = Invoke-NativeCapture -FilePath "docker" -ArgumentList @("ps", "-a", "--format", "{{.Names}}")
+  if ($result.ExitCode -ne 0) {
+    return $false
+  }
+
+  $existing = @{}
+  foreach ($line in ($result.Output -split "`r?`n")) {
+    $name = $line.Trim()
+    if (-not [string]::IsNullOrWhiteSpace($name)) {
+      $existing[$name] = $true
+    }
+  }
+
+  foreach ($name in $names) {
+    if ($existing.ContainsKey($name)) {
+      return $true
+    }
+  }
+  return $false
 }
 
 function Detect-ComposeFile {
@@ -715,7 +821,7 @@ function Clean-Environment {
       "tdengine-model"
       "tdengine-cls"
     )
-    $volumeNames += @("tdmodel_data", "tdmodel_log")
+    $volumeNames += @("tdmodel_data", "tdmodel_mysql", "tdmodel_log")
     $candidateImages += @(
       "tdengine/tdgpt-full:$(Get-EnvOrDefault 'TDGPT_TAG')"
       "tdengine/tdmodel:$(Get-EnvOrDefault 'TDMODEL_TAG')"
