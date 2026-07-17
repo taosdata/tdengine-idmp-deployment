@@ -133,7 +133,7 @@ function Apply-DeployMode {
     "^(1|standard)$" {
       $script:ComposeFile = "docker-compose.yml"
       $script:NeedCheckMemory = $false
-      Write-Log info "Selected: Standard deployment (TSDB Enterprise + IDMP)"
+      Write-Log info "Selected: Standard deployment (TSDB Enterprise + IDMP + CLS)"
     }
     "^(2|full)$" {
       $script:ComposeFile = "docker-compose-tdgpt.yml"
@@ -364,7 +364,7 @@ function Select-ComposeMode {
   }
 
   Write-Host "Please select deployment mode:" -ForegroundColor Green
-  Write-Host "1) Standard deployment (TSDB Enterprise + IDMP) (docker-compose.yml)"
+  Write-Host "1) Standard deployment (TSDB Enterprise + IDMP + CLS) (docker-compose.yml)"
   Write-Host "2) Full deployment (TSDB Enterprise + IDMP + TDgpt + CLS + TDModel) (docker-compose-tdgpt.yml)"
 
   while ($true) {
