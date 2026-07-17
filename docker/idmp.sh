@@ -54,7 +54,7 @@ function apply_deploy_mode() {
     1|standard)
       compose_file="docker-compose.yml"
       need_check_memory=0
-      log info "Selected: Standard deployment (TSDB Enterprise + IDMP)"
+      log info "Selected: Standard deployment (TSDB Enterprise + IDMP + CLS)"
       ;;
     2|full)
       compose_file="docker-compose-tdgpt.yml"
@@ -147,7 +147,7 @@ function select_compose_mode() {
   fi
 
   echo -e "${GREEN_DARK}Please select deployment mode:${NC}"
-  echo "1) Standard deployment (TSDB Enterprise + IDMP) (docker-compose.yml)"
+  echo "1) Standard deployment (TSDB Enterprise + IDMP + CLS) (docker-compose.yml)"
   echo "2) Full deployment (TSDB Enterprise + IDMP + TDgpt + CLS + TDModel) (docker-compose-tdgpt.yml)"
 
   while true; do
