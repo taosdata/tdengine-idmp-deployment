@@ -345,6 +345,159 @@ function setup_timezone() {
   log info "Timezone set to: ${TZ}"
 }
 
+# Old compose mounted idmp_data at /var/lib/taos (data lived in volume/idmp/).
+# New compose mounts idmp_data at /var/lib/taos/idmp (data at volume root).
+function normalize_compose_project_name() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_-]+/-/g; s/^-+//; s/-+$//'
+}
+
+function resolve_idmp_data_volume() {
+  local container_name
+  local volume_name
+  local project_name
+  local candidate
+
+  for container_name in tdengine-idmp-backend tdengine-idmp-ui tdengine-idmp-ai tdengine-idmp; do
+    volume_name=$(docker inspect -f '{{range .Mounts}}{{println .Name .Destination}}{{end}}' "$container_name" 2>/dev/null \
+      | awk '$2 == "/var/lib/taos/idmp" || $2 == "/var/lib/taos" { print $1; exit }')
+    if [[ -n "$volume_name" ]] && docker volume inspect "$volume_name" >/dev/null 2>&1; then
+      echo "$volume_name"
+      return 0
+    fi
+  done
+
+  project_name="${COMPOSE_PROJECT_NAME:-$(basename "$(pwd)")}"
+  project_name=$(normalize_compose_project_name "$project_name")
+  for candidate in "${project_name}_idmp_data" "idmp_data"; do
+    if docker volume inspect "$candidate" >/dev/null 2>&1; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+
+  volume_name=$(docker volume ls -q 2>/dev/null | grep -E '(^|_)idmp_data$' | head -n1 || true)
+  if [[ -n "$volume_name" ]]; then
+    echo "$volume_name"
+    return 0
+  fi
+
+  return 1
+}
+
+function resolve_volume_helper_image() {
+  local image_ref
+  for image_ref in alpine:3.20 alpine:latest busybox:1.36 busybox:latest; do
+    if docker image inspect "$image_ref" >/dev/null 2>&1; then
+      echo "$image_ref"
+      return 0
+    fi
+  done
+
+  log info "Pulling alpine:3.20 for idmp_data volume migration..."
+  if docker pull alpine:3.20 >/dev/null 2>&1; then
+    echo "alpine:3.20"
+    return 0
+  fi
+
+  for image_ref in \
+    "tdengine/idmp-backend-ee:${IDMP_TAG:-latest}" \
+    "tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}"; do
+    if docker image inspect "$image_ref" >/dev/null 2>&1; then
+      echo "$image_ref"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+function migrate_idmp_data_volume_if_needed() {
+  local volume_name
+  local helper_image
+  local probe_result
+  local container_name
+  local migrate_result
+
+  volume_name=$(resolve_idmp_data_volume) || true
+  if [[ -z "$volume_name" ]]; then
+    return 0
+  fi
+
+  helper_image=$(resolve_volume_helper_image) || true
+  if [[ -z "$helper_image" ]]; then
+    log warn "Unable to find a helper image to inspect idmp_data; skipping volume migration check."
+    return 0
+  fi
+
+  log info "Checking idmp_data volume layout (${volume_name})..."
+  probe_result=$(docker run --rm --entrypoint sh -v "${volume_name}:/data:ro" "$helper_image" -c '
+    if [ -d /data/idmp ] && [ -n "$(ls -A /data/idmp 2>/dev/null)" ]; then
+      echo NEED_MIGRATE
+    else
+      echo OK
+    fi
+  ' 2>/dev/null || true)
+
+  if [[ "$probe_result" != *NEED_MIGRATE* ]]; then
+    return 0
+  fi
+
+  log info "Detected old idmp_data layout (volume previously mounted at /var/lib/taos)."
+  log info "Migrating data to new layout (volume mounted at /var/lib/taos/idmp)..."
+
+  for container_name in tdengine-idmp-backend tdengine-idmp-ui tdengine-idmp-ai tdengine-idmp; do
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$container_name"; then
+      log info "Stopping ${container_name} for volume migration..."
+      docker stop "$container_name" >/dev/null 2>&1 || true
+    fi
+  done
+
+  local migrate_exit=0
+  migrate_result=$(docker run --rm --entrypoint sh -v "${volume_name}:/data" "$helper_image" -c '
+    set -e
+    if [ ! -d /data/idmp ]; then
+      echo MIGRATION_SKIP
+      exit 0
+    fi
+    # Flatten volume/idmp/* -> volume/* for the new mount path.
+    cd /data/idmp
+    for f in * .[!.]* ..?*; do
+      [ -e "$f" ] || continue
+      if [ -e "/data/$f" ]; then
+        echo "CONFLICT:$f"
+        continue
+      fi
+      mv "$f" /data/
+    done
+    cd /data
+    # Remove nested dir; keep any unmoved conflict leftovers inside if present
+    if [ -z "$(ls -A /data/idmp 2>/dev/null)" ]; then
+      rmdir /data/idmp 2>/dev/null || rm -rf /data/idmp
+    else
+      echo "WARN: leftover files remain under nested idmp/"
+    fi
+    echo MIGRATION_OK
+  ' 2>&1) || migrate_exit=$?
+  if [[ ${migrate_exit} -ne 0 ]]; then
+    log error "Failed to migrate idmp_data volume (${volume_name})."
+    log error "${migrate_result}"
+    exit 1
+  fi
+
+  if [[ "$migrate_result" == *CONFLICT:* ]]; then
+    log warn "Some files already existed at volume root and were kept; nested copies may remain."
+    log warn "${migrate_result}"
+  fi
+
+  if [[ "$migrate_result" == *MIGRATION_OK* || "$migrate_result" == *MIGRATION_SKIP* ]]; then
+    log info "idmp_data volume migration completed."
+  else
+    log error "Unexpected migration result for idmp_data volume."
+    log error "${migrate_result}"
+    exit 1
+  fi
+}
+
 function start_services() {
   check_docker_compose
   select_compose_mode
@@ -359,6 +512,9 @@ function start_services() {
   if [[ $need_check_memory -eq 1 ]]; then
     check_docker_memory
   fi
+
+  migrate_idmp_data_volume_if_needed
+  remove_legacy_idmp_container
 
   local up_args=(-f "${compose_file}" up -d)
   if compose_services_exist; then
@@ -385,9 +541,9 @@ function start_services() {
 function compose_services_exist() {
   local names=()
   if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
-    names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-model" "tdengine-cls")
+    names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-idmp" "tdengine-model" "tdengine-cls")
   else
-    names=("tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-cls")
+    names=("tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-idmp" "tdengine-cls")
   fi
 
   local name
@@ -399,19 +555,30 @@ function compose_services_exist() {
   return 1
 }
 
+# Pre-split monolith container from older compose files; not in current compose.
+function remove_legacy_idmp_container() {
+  if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "tdengine-idmp"; then
+    log info "Removing legacy container tdengine-idmp..."
+    docker rm -f tdengine-idmp >/dev/null 2>&1 || true
+  fi
+}
+
 function detect_compose_file() {
   local detected_file=""
+  local running_names=""
 
   if ! docker ps -q | grep -q .; then
     log warn "No running containers found"
     return 1
   fi
 
-  if docker ps --format "table {{.Names}}" | grep -q "tdengine-tdgpt"; then
+  running_names=$(docker ps --format '{{.Names}}' 2>/dev/null || true)
+
+  if echo "$running_names" | grep -qx "tdengine-tdgpt"; then
     detected_file="docker-compose-tdgpt.yml"
     log info "Detected TDgpt containers, using: ${detected_file}"
   else
-    if docker ps --format "table {{.Names}}" | grep -qE "tdengine-idmp-backend|tdengine-idmp-ui|tdengine-tsdb|tdengine-cls"; then
+    if echo "$running_names" | grep -qxE 'tdengine-idmp-backend|tdengine-idmp-ui|tdengine-idmp-ai|tdengine-idmp|tdengine-tsdb|tdengine-cls'; then
       detected_file="docker-compose.yml"
       log info "Detected standard deployment containers, using: ${detected_file}"
     else
@@ -451,6 +618,9 @@ function stop_services() {
     fi
   done
 
+  # New compose no longer defines tdengine-idmp; remove it explicitly on upgrade/stop.
+  remove_legacy_idmp_container
+
   if [[ ${ret} -eq 0 ]]; then
     log info "Services stopped successfully!"
   else
@@ -478,7 +648,7 @@ function clean_environment() {
   select_compose_mode
 
   compose_files=("$compose_file")
-  container_names=("tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-cls")
+  container_names=("tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-idmp" "tdengine-cls")
   volume_names=("tsdb_data" "tsdb_log" "idmp_data" "idmp_log" "cls_data" "cls_log")
   candidate_images=(
     "tdengine/tsdb-ee:${TSDB_TAG:-latest}"
@@ -489,7 +659,7 @@ function clean_environment() {
   )
 
   if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
-    container_names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-model" "tdengine-cls")
+    container_names=("tdengine-tdgpt" "tdengine-tsdb" "tdengine-idmp-backend" "tdengine-idmp-ui" "tdengine-idmp-ai" "tdengine-idmp" "tdengine-model" "tdengine-cls")
     volume_names+=("tdmodel_data" "tdmodel_mysql" "tdmodel_log")
     candidate_images+=(
       "tdengine/tdgpt-full:${TDGPT_TAG:-latest}"
@@ -570,6 +740,8 @@ function clean_environment() {
       return
     fi
   done
+
+  remove_legacy_idmp_container
 
   for image_ref in "${images[@]}"; do
     log info "Removing image ${image_ref}..."
