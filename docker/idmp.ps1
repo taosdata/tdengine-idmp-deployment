@@ -639,6 +639,209 @@ function Setup-Timezone {
   Write-Log info "Timezone set to: $($env:TZ)"
 }
 
+# Old compose mounted idmp_data at /var/lib/taos (data lived in volume/idmp/).
+# New compose mounts idmp_data at /var/lib/taos/idmp (data at volume root).
+function Get-NormalizedComposeProjectName {
+  param([string]$Name)
+  $normalized = $Name.ToLowerInvariant()
+  $normalized = [regex]::Replace($normalized, '[^a-z0-9_-]+', '-')
+  $normalized = $normalized.Trim('-')
+  return $normalized
+}
+
+function Resolve-IdmpDataVolume {
+  $containers = @(
+    "tdengine-idmp-backend"
+    "tdengine-idmp-ui"
+    "tdengine-idmp-ai"
+    "tdengine-idmp"
+  )
+
+  foreach ($containerName in $containers) {
+    $inspectResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @(
+      "inspect", "-f", "{{range .Mounts}}{{println .Name .Destination}}{{end}}", $containerName
+    )
+    if ($inspectResult.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($inspectResult.Output)) {
+      continue
+    }
+
+    foreach ($line in ($inspectResult.Output -split "`r?`n")) {
+      $parts = ($line.Trim() -split '\s+', 2)
+      if ($parts.Count -lt 2) { continue }
+      $volumeName = $parts[0]
+      $destination = $parts[1]
+      if ($destination -eq "/var/lib/taos/idmp" -or $destination -eq "/var/lib/taos") {
+        $volCheck = Invoke-Native -FilePath "docker" -ArgumentList @("volume", "inspect", $volumeName) -Quiet
+        if ($volCheck -eq 0) {
+          return $volumeName
+        }
+      }
+    }
+  }
+
+  $projectName = $env:COMPOSE_PROJECT_NAME
+  if ([string]::IsNullOrWhiteSpace($projectName)) {
+    $projectName = Split-Path -Leaf $PSScriptRoot
+  }
+  $projectName = Get-NormalizedComposeProjectName $projectName
+
+  foreach ($candidate in @("${projectName}_idmp_data", "idmp_data")) {
+    $volCheck = Invoke-Native -FilePath "docker" -ArgumentList @("volume", "inspect", $candidate) -Quiet
+    if ($volCheck -eq 0) {
+      return $candidate
+    }
+  }
+
+  $listResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @("volume", "ls", "-q")
+  if ($listResult.ExitCode -eq 0) {
+    foreach ($line in ($listResult.Output -split "`r?`n")) {
+      $name = $line.Trim()
+      if ($name -match '(^|_)idmp_data$') {
+        return $name
+      }
+    }
+  }
+
+  return $null
+}
+
+function Resolve-VolumeHelperImage {
+  $candidates = @(
+    "alpine:3.20"
+    "alpine:latest"
+    "busybox:1.36"
+    "busybox:latest"
+  )
+
+  foreach ($imageRef in $candidates) {
+    if (Test-DockerImageExists $imageRef) {
+      return $imageRef
+    }
+  }
+
+  Write-Log info "Pulling alpine:3.20 for idmp_data volume migration..."
+  $pullExit = Invoke-Native -FilePath "docker" -ArgumentList @("pull", "alpine:3.20") -Quiet
+  if ($pullExit -eq 0) {
+    return "alpine:3.20"
+  }
+
+  $fallbackImages = @(
+    "tdengine/idmp-backend-ee:$(Get-EnvOrDefault 'IDMP_TAG')"
+    "tdengine/idmp-ai-ee:$(Get-EnvOrDefault 'IDMP_AI_TAG')"
+  )
+  foreach ($imageRef in $fallbackImages) {
+    if (Test-DockerImageExists $imageRef) {
+      return $imageRef
+    }
+  }
+
+  return $null
+}
+
+function Invoke-IdmpDataVolumeMigrationIfNeeded {
+  $volumeName = Resolve-IdmpDataVolume
+  if ([string]::IsNullOrWhiteSpace($volumeName)) {
+    return
+  }
+
+  $helperImage = Resolve-VolumeHelperImage
+  if ([string]::IsNullOrWhiteSpace($helperImage)) {
+    Write-Log warn "Unable to find a helper image to inspect idmp_data; skipping volume migration check."
+    return
+  }
+
+  Write-Log info "Checking idmp_data volume layout (${volumeName})..."
+  $probeScript = @'
+if [ -d /data/idmp ] && [ -n "$(ls -A /data/idmp 2>/dev/null)" ]; then
+  echo NEED_MIGRATE
+else
+  echo OK
+fi
+'@
+  $probeScript = $probeScript -replace "`r`n", "`n" -replace "`r", "`n"
+  $probeResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @(
+    "run", "--rm", "--entrypoint", "sh",
+    "-v", "${volumeName}:/data:ro",
+    $helperImage, "-c", $probeScript
+  )
+
+  if ($probeResult.Output -notmatch "NEED_MIGRATE") {
+    return
+  }
+
+  Write-Log info "Detected old idmp_data layout (volume previously mounted at /var/lib/taos)."
+  Write-Log info "Migrating data to new layout (volume mounted at /var/lib/taos/idmp)..."
+
+  $namesResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @("ps", "--format", "{{.Names}}")
+  $runningNames = @{}
+  if ($namesResult.ExitCode -eq 0) {
+    foreach ($line in ($namesResult.Output -split "`r?`n")) {
+      $name = $line.Trim()
+      if (-not [string]::IsNullOrWhiteSpace($name)) {
+        $runningNames[$name] = $true
+      }
+    }
+  }
+
+  foreach ($containerName in @("tdengine-idmp-backend", "tdengine-idmp-ui", "tdengine-idmp-ai", "tdengine-idmp")) {
+    if ($runningNames.ContainsKey($containerName)) {
+      Write-Log info "Stopping ${containerName} for volume migration..."
+      [void](Invoke-Native -FilePath "docker" -ArgumentList @("stop", $containerName) -Quiet)
+    }
+  }
+
+  $migrateScript = @'
+set -e
+if [ ! -d /data/idmp ]; then
+  echo MIGRATION_SKIP
+  exit 0
+fi
+cd /data/idmp
+for f in * .[!.]* ..?*; do
+  [ -e "$f" ] || continue
+  if [ -e "/data/$f" ]; then
+    echo "CONFLICT:$f"
+    continue
+  fi
+  mv "$f" /data/
+done
+cd /data
+if [ -z "$(ls -A /data/idmp 2>/dev/null)" ]; then
+  rmdir /data/idmp 2>/dev/null || rm -rf /data/idmp
+else
+  echo "WARN: leftover files remain under nested idmp/"
+fi
+echo MIGRATION_OK
+'@
+  $migrateScript = $migrateScript -replace "`r`n", "`n" -replace "`r", "`n"
+
+  $migrateResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @(
+    "run", "--rm", "--entrypoint", "sh",
+    "-v", "${volumeName}:/data",
+    $helperImage, "-c", $migrateScript
+  )
+
+  if ($migrateResult.ExitCode -ne 0) {
+    Write-Log error "Failed to migrate idmp_data volume (${volumeName})."
+    Write-Log error $migrateResult.Output
+    exit 1
+  }
+
+  if ($migrateResult.Output -match "CONFLICT:") {
+    Write-Log warn "Some files already existed at volume root and were kept; nested copies may remain."
+    Write-Log warn $migrateResult.Output
+  }
+
+  if ($migrateResult.Output -match "MIGRATION_OK|MIGRATION_SKIP") {
+    Write-Log info "idmp_data volume migration completed."
+  }
+  else {
+    Write-Log error "Unexpected migration result for idmp_data volume."
+    Write-Log error $migrateResult.Output
+    exit 1
+  }
+}
+
 function Start-Services {
   Check-DockerCompose
   Select-ComposeMode
@@ -654,6 +857,9 @@ function Start-Services {
   if ($script:NeedCheckMemory) {
     Check-DockerMemory
   }
+
+  Invoke-IdmpDataVolumeMigrationIfNeeded
+  Remove-LegacyIdmpContainer
 
   $upArgs = [System.Collections.Generic.List[string]]::new()
   $upArgs.AddRange([string[]]@("-f", $script:ComposeFile, "up", "-d"))
@@ -686,6 +892,7 @@ function Test-ComposeServicesExist {
       "tdengine-idmp-backend"
       "tdengine-idmp-ui"
       "tdengine-idmp-ai"
+      "tdengine-idmp"
       "tdengine-model"
       "tdengine-cls"
     )
@@ -696,6 +903,7 @@ function Test-ComposeServicesExist {
       "tdengine-idmp-backend"
       "tdengine-idmp-ui"
       "tdengine-idmp-ai"
+      "tdengine-idmp"
       "tdengine-cls"
     )
   }
@@ -721,6 +929,29 @@ function Test-ComposeServicesExist {
   return $false
 }
 
+# Pre-split monolith container from older compose files; not in current compose.
+function Remove-LegacyIdmpContainer {
+  $result = Invoke-NativeCapture -FilePath "docker" -ArgumentList @("ps", "-a", "--format", "{{.Names}}")
+  if ($result.ExitCode -ne 0) {
+    return
+  }
+
+  $found = $false
+  foreach ($line in ($result.Output -split "`r?`n")) {
+    if ($line.Trim() -eq "tdengine-idmp") {
+      $found = $true
+      break
+    }
+  }
+
+  if (-not $found) {
+    return
+  }
+
+  Write-Log info "Removing legacy container tdengine-idmp..."
+  [void](Invoke-Native -FilePath "docker" -ArgumentList @("rm", "-f", "tdengine-idmp") -Quiet)
+}
+
 function Detect-ComposeFile {
   $runningResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @("ps", "-q")
   if ($runningResult.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($runningResult.Output.Trim())) {
@@ -729,17 +960,34 @@ function Detect-ComposeFile {
   }
 
   $namesResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @("ps", "--format", "{{.Names}}")
-  $names = $namesResult.Output
-  if ($names -match "tdengine-tdgpt") {
+  $nameSet = @{}
+  foreach ($line in ($namesResult.Output -split "`r?`n")) {
+    $name = $line.Trim()
+    if (-not [string]::IsNullOrWhiteSpace($name)) {
+      $nameSet[$name] = $true
+    }
+  }
+
+  if ($nameSet.ContainsKey("tdengine-tdgpt")) {
     $script:ComposeFile = "docker-compose-tdgpt.yml"
     Write-Log info "Detected TDgpt containers, using: $($script:ComposeFile)"
     return $true
   }
 
-  if ($names -match "tdengine-idmp-backend|tdengine-idmp-ui|tdengine-tsdb|tdengine-cls") {
-    $script:ComposeFile = "docker-compose.yml"
-    Write-Log info "Detected standard deployment containers, using: $($script:ComposeFile)"
-    return $true
+  $standardNames = @(
+    "tdengine-idmp-backend"
+    "tdengine-idmp-ui"
+    "tdengine-idmp-ai"
+    "tdengine-idmp"
+    "tdengine-tsdb"
+    "tdengine-cls"
+  )
+  foreach ($name in $standardNames) {
+    if ($nameSet.ContainsKey($name)) {
+      $script:ComposeFile = "docker-compose.yml"
+      Write-Log info "Detected standard deployment containers, using: $($script:ComposeFile)"
+      return $true
+    }
   }
 
   Write-Log warn "No IDMP related containers found"
@@ -774,6 +1022,9 @@ function Stop-Services {
     }
   }
 
+  # New compose no longer defines tdengine-idmp; remove it explicitly on upgrade/stop.
+  Remove-LegacyIdmpContainer
+
   if ($ret -eq 0) {
     Write-Log info "Services stopped successfully!"
   }
@@ -792,6 +1043,7 @@ function Clean-Environment {
     "tdengine-idmp-backend"
     "tdengine-idmp-ui"
     "tdengine-idmp-ai"
+    "tdengine-idmp"
     "tdengine-cls"
   )
   $volumeNames = @(
@@ -818,6 +1070,7 @@ function Clean-Environment {
       "tdengine-idmp-backend"
       "tdengine-idmp-ui"
       "tdengine-idmp-ai"
+      "tdengine-idmp"
       "tdengine-model"
       "tdengine-cls"
     )
@@ -898,6 +1151,8 @@ function Clean-Environment {
       return
     }
   }
+
+  Remove-LegacyIdmpContainer
 
   foreach ($imageRef in $images) {
     Write-Log info "Removing image $imageRef..."
