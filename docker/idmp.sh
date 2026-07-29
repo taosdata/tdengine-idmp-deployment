@@ -233,6 +233,7 @@ function setup_license_server_addr() {
 
 function check_and_upgrade_images() {
   local images=()
+  local pull_ret=0
 
   images+=("tdengine/tsdb-ee:${TSDB_TAG:-latest}")
   images+=("tdengine/idmp-backend-ee:${IDMP_TAG:-latest}")
@@ -279,8 +280,14 @@ function check_and_upgrade_images() {
       log info "Pulling latest images with Docker Compose..."
       if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
         ${compose_cmd} -f "${compose_file}" pull --policy always
+        pull_ret=$?
       else
         ${compose_cmd} -f "${compose_file}" pull
+        pull_ret=$?
+      fi
+      if [[ ${pull_ret} -ne 0 ]]; then
+        log error "Failed to pull images. Please check the Docker Compose output and try again."
+        exit 1
       fi
       break
     elif [[ "$upgrade_choice" =~ ^[Nn]$ ]]; then
@@ -534,7 +541,8 @@ function start_services() {
     log info "IDMP Web Console: ${idmp_url}"
     log info "License Server: ${license_server_addr}"
   else
-    echo -e "${YELLOW}Failed to start services. Please check the logs.${NC}"
+    log error "Failed to start services. Please check the logs."
+    exit 1
   fi
 }
 
