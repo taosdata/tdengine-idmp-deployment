@@ -120,6 +120,9 @@ services:
       TDA_GIT_ENABLE: "${TDA_GIT_ENABLE:-false}"
       TDA_MODEL_SERVICE_URL: "${TDA_MODEL_SERVICE_URL:-http://tdengine-model:6036}"
       TDA_ALL_IN_ONE: "${TDA_ALL_IN_ONE:-true}"
+      JAVA_XMS: "${JAVA_XMS:-2g}"
+      JAVA_XMX: "${JAVA_XMX:-4g}"
+      JAVA_OPTS: "${JAVA_OPTS:-}"
     ports:
       - "6038:6038"
     volumes:
