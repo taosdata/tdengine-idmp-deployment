@@ -260,7 +260,7 @@ function check_and_upgrade_images() {
   done
 
   if [[ ${#missing_images[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}The following images do not exist locally and will be pulled by Docker Compose on start:${NC}"
+    echo -e "${YELLOW}The following images do not exist locally and will be pulled before start:${NC}"
     for image_ref in "${missing_images[@]}"; do
       echo "  - $image_ref"
     done
@@ -393,7 +393,7 @@ function resolve_idmp_data_volume() {
 
 function resolve_volume_helper_image() {
   local image_ref
-  # Use already-local images first for volume migration.
+  # Prefer IDMP images already pulled by pull_missing_images.
   for image_ref in \
     "tdengine/idmp-backend-ee:${IDMP_TAG:-latest}" \
     "tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}" \
@@ -494,6 +494,43 @@ function migrate_idmp_data_volume_if_needed() {
   fi
 }
 
+function pull_missing_images() {
+  local pull_ret=0
+  local image_ref
+  local images=()
+
+  log info "Pulling missing images ..."
+  if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
+    ${compose_cmd} -f "${compose_file}" pull --policy missing
+    pull_ret=$?
+  else
+    # docker-compose v1 has no --policy; pull only images that are absent locally.
+    images+=("tdengine/tsdb-ee:${TSDB_TAG:-latest}")
+    images+=("tdengine/idmp-backend-ee:${IDMP_TAG:-latest}")
+    images+=("tdengine/idmp-ui-ee:${IDMP_TAG:-latest}")
+    images+=("tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}")
+    images+=("tdengine/cls:${CLS_TAG:-latest}")
+    if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
+      images+=("tdengine/tdgpt-full:${TDGPT_TAG:-latest}")
+      images+=("tdengine/tdmodel:${TDMODEL_TAG:-latest}")
+    fi
+    for image_ref in "${images[@]}"; do
+      if ! docker image inspect "$image_ref" >/dev/null 2>&1; then
+        log info "Pulling ${image_ref}..."
+        if ! docker pull "$image_ref"; then
+          pull_ret=1
+          break
+        fi
+      fi
+    done
+  fi
+
+  if [[ ${pull_ret} -ne 0 ]]; then
+    log error "Failed to pull missing images. Please check the output and try again."
+    exit 1
+  fi
+}
+
 function start_services() {
   check_docker_compose
   select_compose_mode
@@ -509,6 +546,7 @@ function start_services() {
     check_docker_memory
   fi
 
+  pull_missing_images
   migrate_idmp_data_volume_if_needed
   remove_legacy_idmp_container
 
@@ -516,9 +554,6 @@ function start_services() {
   if compose_services_exist; then
     log info "Existing services detected, forcing recreate..."
     up_args+=(--force-recreate)
-  fi
-  if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
-    up_args+=(--pull missing)
   fi
 
   log info "Starting services with ${compose_file}..."

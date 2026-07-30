@@ -524,7 +524,7 @@ function Check-AndUpgradeImages {
   }
 
   if ($missingImages.Count -gt 0) {
-    Write-Host "The following images do not exist locally and will be pulled by Docker Compose on start:" -ForegroundColor Yellow
+    Write-Host "The following images do not exist locally and will be pulled before start:" -ForegroundColor Yellow
     foreach ($imageRef in $missingImages) {
       Write-Host "  - $imageRef"
     }
@@ -706,7 +706,7 @@ function Resolve-IdmpDataVolume {
 }
 
 function Resolve-VolumeHelperImage {
-  # Use only already-local images; never pull a helper image for migration.
+  # Prefer IDMP images already pulled by Pull-MissingImages.
   $candidates = @(
     "tdengine/idmp-backend-ee:$(Get-EnvOrDefault 'IDMP_TAG')"
     "tdengine/idmp-ai-ee:$(Get-EnvOrDefault 'IDMP_AI_TAG')"
@@ -829,6 +829,45 @@ echo MIGRATION_OK
   }
 }
 
+function Pull-MissingImages {
+  Write-Log info "Pulling missing images..."
+
+  $pullRet = 0
+  if ($script:ComposeSupportsPullPolicy) {
+    $pullRet = Invoke-Compose -ComposeArgs @("-f", $script:ComposeFile, "pull", "--policy", "missing")
+  }
+  else {
+    # docker-compose v1 has no --policy; pull only images that are absent locally.
+    $images = @(
+      "tdengine/tsdb-ee:$(Get-EnvOrDefault 'TSDB_TAG')"
+      "tdengine/idmp-backend-ee:$(Get-EnvOrDefault 'IDMP_TAG')"
+      "tdengine/idmp-ui-ee:$(Get-EnvOrDefault 'IDMP_TAG')"
+      "tdengine/idmp-ai-ee:$(Get-EnvOrDefault 'IDMP_AI_TAG')"
+      "tdengine/cls:$(Get-EnvOrDefault 'CLS_TAG')"
+    )
+    if ($script:ComposeFile -eq "docker-compose-tdgpt.yml") {
+      $images += "tdengine/tdgpt-full:$(Get-EnvOrDefault 'TDGPT_TAG')"
+      $images += "tdengine/tdmodel:$(Get-EnvOrDefault 'TDMODEL_TAG')"
+    }
+
+    foreach ($imageRef in $images) {
+      if (-not (Test-DockerImageExists $imageRef)) {
+        Write-Log info "Pulling ${imageRef}..."
+        $exitCode = Invoke-Native -FilePath "docker" -ArgumentList @("pull", $imageRef)
+        if ($exitCode -ne 0) {
+          $pullRet = $exitCode
+          break
+        }
+      }
+    }
+  }
+
+  if ($pullRet -ne 0) {
+    Write-Log error "Failed to pull missing images. Please check the output and try again."
+    exit 1
+  }
+}
+
 function Start-Services {
   Check-DockerCompose
   Select-ComposeMode
@@ -845,6 +884,7 @@ function Start-Services {
     Check-DockerMemory
   }
 
+  Pull-MissingImages
   Invoke-IdmpDataVolumeMigrationIfNeeded
   Remove-LegacyIdmpContainer
 
@@ -853,9 +893,6 @@ function Start-Services {
   if (Test-ComposeServicesExist) {
     Write-Log info "Existing services detected, forcing recreate..."
     $upArgs.Add("--force-recreate") | Out-Null
-  }
-  if ($script:ComposeSupportsPullPolicy) {
-    $upArgs.AddRange([string[]]@("--pull", "missing"))
   }
 
   Write-Log info "Starting services with $($script:ComposeFile)..."
