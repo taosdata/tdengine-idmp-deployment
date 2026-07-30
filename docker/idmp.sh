@@ -146,7 +146,7 @@ function select_compose_mode() {
     return
   fi
 
-  echo -e "${GREEN_DARK}Please select deployment mode:${NC}"
+  log info "Please select deployment mode:"
   echo "1) Standard deployment (TSDB Enterprise + IDMP + CLS) (docker-compose.yml)"
   echo "2) Full deployment (TSDB Enterprise + IDMP + TDgpt + CLS + TDModel) (docker-compose-tdgpt.yml)"
 
@@ -164,7 +164,7 @@ function select_compose_mode() {
         break
         ;;
       *)
-        echo -e "${YELLOW}Invalid choice. Please enter 1 or 2.${NC}"
+        log warn "Invalid choice. Please enter 1 or 2."
         ;;
     esac
   done
@@ -198,7 +198,7 @@ function setup_url() {
       idmp_url="${new_idmp_url:-$idmp_url}"
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
+      log warn "Please enter y, n, or press Enter (default Y)."
     fi
   done
 
@@ -224,7 +224,7 @@ function setup_license_server_addr() {
       license_server_addr="${new_license_server_addr:-$license_server_addr}"
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
+      log warn "Please enter y, n, or press Enter (default Y)."
     fi
   done
 
@@ -260,7 +260,7 @@ function check_and_upgrade_images() {
   done
 
   if [[ ${#missing_images[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}The following images do not exist locally and will be pulled before start:${NC}"
+    log warn "The following images do not exist locally and will be pulled before start:"
     for image_ref in "${missing_images[@]}"; do
       echo "  - $image_ref"
     done
@@ -268,7 +268,7 @@ function check_and_upgrade_images() {
 
   [[ ${#existing_images[@]} -eq 0 ]] && return 0
 
-  echo -e "${YELLOW}The following images already exist locally:${NC}"
+  log warn "The following images already exist locally:"
   for image_ref in "${existing_images[@]}"; do
     echo "  - $image_ref"
   done
@@ -294,7 +294,7 @@ function check_and_upgrade_images() {
       log info "Skipping update, using existing images."
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
+      log warn "Please enter y, n, or press Enter (default Y)."
     fi
   done
 }
@@ -312,7 +312,7 @@ function ask_git_enable() {
       log info "Git version control enabled."
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y, y disables).${NC}"
+      log warn "Please enter y, n, or press Enter (default Y, y disables)."
     fi
   done
 }
@@ -646,7 +646,7 @@ function stop_services() {
       ret=$?
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
+      log warn "Please enter y, n, or press Enter (default N)."
     fi
   done
 
@@ -720,29 +720,29 @@ function clean_environment() {
     fi
   done
 
-  echo -e "${YELLOW}This will remove containers, volumes, and images for the IDMP environment.${NC}"
-  echo -e "${YELLOW}Compose files used:${NC}"
+  log warn "This will remove containers, volumes, and images for the IDMP environment."
+  log warn "Compose files used:"
   for compose_file_ref in "${compose_files[@]}"; do
     echo "  - $compose_file_ref"
   done
 
-  echo -e "${YELLOW}Containers managed by this environment:${NC}"
+  log warn "Containers managed by this environment:"
   for container_name in "${container_names[@]}"; do
     echo "  - $container_name"
   done
 
-  echo -e "${YELLOW}Compose volumes to remove:${NC}"
+  log warn "Compose volumes to remove:"
   for volume_name in "${volume_names[@]}"; do
     echo "  - $volume_name"
   done
 
-  echo -e "${YELLOW}Compose networks to remove:${NC}"
+  log warn "Compose networks to remove:"
   for network_name in "${network_names[@]}"; do
     echo "  - $network_name"
   done
 
   if [[ ${#images[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}The following images will be removed:${NC}"
+    log warn "The following images will be removed:"
     for image_ref in "${images[@]}"; do
       echo "  - $image_ref"
     done
@@ -759,7 +759,7 @@ function clean_environment() {
       log info "Clean canceled."
       return
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
+      log warn "Please enter y, n, or press Enter (default N)."
     fi
   done
 
