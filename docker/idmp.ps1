@@ -737,17 +737,36 @@ function Invoke-IdmpDataVolumeMigrationIfNeeded {
     return
   }
 
+  $layoutMarker = ".idmp_volume_layout_v2"
   Write-Log info "Checking idmp_data volume layout (${volumeName})..."
+  # Use single-quoted here-string body via replace to avoid PowerShell expanding $
   $probeScript = @'
-if [ -d /data/idmp ] && [ -n "$(ls -A /data/idmp 2>/dev/null)" ]; then
-  echo NEED_MIGRATE
-else
+marker="__LAYOUT_MARKER__"
+if [ -f "/data/${marker}" ]; then
   echo OK
+  exit 0
 fi
+if [ ! -d /data/idmp ] || [ -z "$(ls -A /data/idmp 2>/dev/null)" ]; then
+  echo OK
+  exit 0
+fi
+echo NEED_MIGRATE
+cd /data
+for f in * .[!.]* ..?*; do
+  [ -e "$f" ] || continue
+  [ "$f" = "idmp" ] && continue
+  [ "$f" = "__LAYOUT_MARKER__" ] && continue
+  case "$f" in
+    _premature_2x_*) continue ;;
+  esac
+  echo PREMATURE
+  break
+done
 '@
+  $probeScript = $probeScript.Replace("__LAYOUT_MARKER__", $layoutMarker)
   $probeScript = $probeScript -replace "`r`n", "`n" -replace "`r", "`n"
   $probeResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @(
-    "run", "--rm", "--entrypoint", "sh",
+    "run", "--rm", "-u", "0:0", "--entrypoint", "sh",
     "-v", "${volumeName}:/data:ro",
     $helperImage, "-c", $probeScript
   )
@@ -757,7 +776,13 @@ fi
   }
 
   Write-Log info "Detected old idmp_data layout (volume previously mounted at /var/lib/taos)."
-  Write-Log info "Migrating data to new layout (volume mounted at /var/lib/taos/idmp)..."
+  if ($probeResult.Output -match "PREMATURE") {
+    Write-Log warn "Volume root already has data (likely 2.x started before migration)."
+    Write-Log warn "Will move root files aside, then copy legacy nested idmp/ to volume root (keeping idmp/ for rollback)."
+  }
+  else {
+    Write-Log info "Copying nested idmp/ data to volume root (keeping nested idmp/ for rollback)..."
+  }
 
   $namesResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @("ps", "--format", "{{.Names}}")
   $runningNames = @{}
@@ -779,31 +804,70 @@ fi
 
   $migrateScript = @'
 set -e
+marker="__LAYOUT_MARKER__"
+if [ -f "/data/${marker}" ]; then
+  echo MIGRATION_SKIP
+  exit 0
+fi
 if [ ! -d /data/idmp ]; then
   echo MIGRATION_SKIP
   exit 0
 fi
+
+premature=0
+cd /data
+for f in * .[!.]* ..?*; do
+  [ -e "$f" ] || continue
+  [ "$f" = "idmp" ] && continue
+  [ "$f" = "__LAYOUT_MARKER__" ] && continue
+  case "$f" in
+    _premature_2x_*) continue ;;
+  esac
+  premature=1
+  break
+done
+
+if [ "$premature" -eq 1 ]; then
+  stamp=$(date +%Y%m%d-%H%M%S)
+  aside="/data/_premature_2x_${stamp}"
+  mkdir -p "$aside"
+  cd /data
+  for f in * .[!.]* ..?*; do
+    [ -e "$f" ] || continue
+    [ "$f" = "idmp" ] && continue
+    case "$f" in
+      _premature_2x_*) continue ;;
+    esac
+    mv "$f" "$aside/"
+  done
+  echo "ASIDE:$aside"
+fi
+
 cd /data/idmp
 for f in * .[!.]* ..?*; do
   [ -e "$f" ] || continue
   if [ -e "/data/$f" ]; then
     echo "CONFLICT:$f"
-    continue
+    rm -rf "/data/$f"
   fi
-  mv "$f" /data/
+  if cp -a "$f" /data/ 2>/dev/null; then
+    :
+  else
+    if [ -d "$f" ]; then
+      cp -r "$f" /data/
+    else
+      cp "$f" /data/
+    fi
+  fi
 done
-cd /data
-if [ -z "$(ls -A /data/idmp 2>/dev/null)" ]; then
-  rmdir /data/idmp 2>/dev/null || rm -rf /data/idmp
-else
-  echo "WARN: leftover files remain under nested idmp/"
-fi
+printf "flat-copy\n" > "/data/${marker}"
 echo MIGRATION_OK
 '@
+  $migrateScript = $migrateScript.Replace("__LAYOUT_MARKER__", $layoutMarker)
   $migrateScript = $migrateScript -replace "`r`n", "`n" -replace "`r", "`n"
 
   $migrateResult = Invoke-NativeCapture -FilePath "docker" -ArgumentList @(
-    "run", "--rm", "--entrypoint", "sh",
+    "run", "--rm", "-u", "0:0", "--entrypoint", "sh",
     "-v", "${volumeName}:/data",
     $helperImage, "-c", $migrateScript
   )
@@ -811,16 +875,21 @@ echo MIGRATION_OK
   if ($migrateResult.ExitCode -ne 0) {
     Write-Log error "Failed to migrate idmp_data volume (${volumeName})."
     Write-Log error $migrateResult.Output
+    Write-Log error "Original data remains under nested idmp/ for rollback."
     exit 1
   }
 
   if ($migrateResult.Output -match "CONFLICT:") {
-    Write-Log warn "Some files already existed at volume root and were kept; nested copies may remain."
+    Write-Log warn "Some root paths already existed and were replaced from nested idmp/."
     Write-Log warn $migrateResult.Output
   }
 
   if ($migrateResult.Output -match "MIGRATION_OK|MIGRATION_SKIP") {
-    Write-Log info "idmp_data volume migration completed."
+    Write-Log info "idmp_data volume migration completed (nested idmp/ kept for rollback)."
+    if ($migrateResult.Output -match "ASIDE:") {
+      Write-Log info "Premature 2.x root data was moved aside (see ASIDE path in migration output)."
+    }
+    Write-Log info "Rollback tip: remount idmp_data at /var/lib/taos to use nested idmp/ again."
   }
   else {
     Write-Log error "Unexpected migration result for idmp_data volume."

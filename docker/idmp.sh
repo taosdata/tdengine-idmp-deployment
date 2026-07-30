@@ -413,6 +413,9 @@ function migrate_idmp_data_volume_if_needed() {
   local probe_result
   local container_name
   local migrate_result
+  local migrate_exit=0
+  # Marker means idmp/* was already copied to volume root; nested idmp/ may be kept for rollback.
+  local layout_marker=".idmp_volume_layout_v2"
 
   volume_name=$(resolve_idmp_data_volume) || true
   if [[ -z "$volume_name" ]]; then
@@ -426,12 +429,30 @@ function migrate_idmp_data_volume_if_needed() {
   fi
 
   log info "Checking idmp_data volume layout (${volume_name})..."
-  probe_result=$(docker run --rm --entrypoint sh -v "${volume_name}:/data:ro" "$helper_image" -c '
-    if [ -d /data/idmp ] && [ -n "$(ls -A /data/idmp 2>/dev/null)" ]; then
-      echo NEED_MIGRATE
-    else
+  # NEED_MIGRATE: legacy nested idmp/ has data and layout marker is absent.
+  # PREMATURE: volume root already has other files (2.x started before copy).
+  probe_result=$(docker run --rm -u 0:0 --entrypoint sh -v "${volume_name}:/data:ro" "$helper_image" -c '
+    marker="'"${layout_marker}"'"
+    if [ -f "/data/${marker}" ]; then
       echo OK
+      exit 0
     fi
+    if [ ! -d /data/idmp ] || [ -z "$(ls -A /data/idmp 2>/dev/null)" ]; then
+      echo OK
+      exit 0
+    fi
+    echo NEED_MIGRATE
+    cd /data
+    for f in * .[!.]* ..?*; do
+      [ -e "$f" ] || continue
+      [ "$f" = "idmp" ] && continue
+      [ "$f" = "'"${layout_marker}"'" ] && continue
+      case "$f" in
+        _premature_2x_*) continue ;;
+      esac
+      echo PREMATURE
+      break
+    done
   ' 2>/dev/null || true)
 
   if [[ "$probe_result" != *NEED_MIGRATE* ]]; then
@@ -439,7 +460,12 @@ function migrate_idmp_data_volume_if_needed() {
   fi
 
   log info "Detected old idmp_data layout (volume previously mounted at /var/lib/taos)."
-  log info "Migrating data to new layout (volume mounted at /var/lib/taos/idmp)..."
+  if [[ "$probe_result" == *PREMATURE* ]]; then
+    log warn "Volume root already has data (likely 2.x started before migration)."
+    log warn "Will move root files aside, then copy legacy nested idmp/ to volume root (keeping idmp/ for rollback)."
+  else
+    log info "Copying nested idmp/ data to volume root (keeping nested idmp/ for rollback)..."
+  fi
 
   for container_name in tdengine-idmp-backend tdengine-idmp-ui tdengine-idmp-ai tdengine-idmp; do
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$container_name"; then
@@ -448,45 +474,90 @@ function migrate_idmp_data_volume_if_needed() {
     fi
   done
 
-  local migrate_exit=0
-  migrate_result=$(docker run --rm --entrypoint sh -v "${volume_name}:/data" "$helper_image" -c '
+  migrate_result=$(docker run --rm -u 0:0 --entrypoint sh -v "${volume_name}:/data" "$helper_image" -c '
     set -e
+    marker="'"${layout_marker}"'"
+    if [ -f "/data/${marker}" ]; then
+      echo MIGRATION_SKIP
+      exit 0
+    fi
     if [ ! -d /data/idmp ]; then
       echo MIGRATION_SKIP
       exit 0
     fi
-    # Flatten volume/idmp/* -> volume/* for the new mount path.
+
+    premature=0
+    cd /data
+    for f in * .[!.]* ..?*; do
+      [ -e "$f" ] || continue
+      [ "$f" = "idmp" ] && continue
+      [ "$f" = "'"${layout_marker}"'" ] && continue
+      case "$f" in
+        _premature_2x_*) continue ;;
+      esac
+      premature=1
+      break
+    done
+
+    if [ "$premature" -eq 1 ]; then
+      stamp=$(date +%Y%m%d-%H%M%S)
+      aside="/data/_premature_2x_${stamp}"
+      mkdir -p "$aside"
+      cd /data
+      for f in * .[!.]* ..?*; do
+        [ -e "$f" ] || continue
+        [ "$f" = "idmp" ] && continue
+        case "$f" in
+          _premature_2x_*) continue ;;
+        esac
+        mv "$f" "$aside/"
+      done
+      echo "ASIDE:$aside"
+    fi
+
+    # Copy volume/idmp/* -> volume/* ; keep nested idmp/ for easy rollback.
+    # Prefer cp -a when available; busybox may only have cp -a via BusyBox applet.
     cd /data/idmp
     for f in * .[!.]* ..?*; do
       [ -e "$f" ] || continue
       if [ -e "/data/$f" ]; then
         echo "CONFLICT:$f"
-        continue
+        rm -rf "/data/$f"
       fi
-      mv "$f" /data/
+      if cp -a "$f" /data/ 2>/dev/null; then
+        :
+      else
+        # Fallback if -a unsupported
+        if [ -d "$f" ]; then
+          cp -r "$f" /data/
+        else
+          cp "$f" /data/
+        fi
+      fi
     done
-    cd /data
-    # Remove nested dir; keep any unmoved conflict leftovers inside if present
-    if [ -z "$(ls -A /data/idmp 2>/dev/null)" ]; then
-      rmdir /data/idmp 2>/dev/null || rm -rf /data/idmp
-    else
-      echo "WARN: leftover files remain under nested idmp/"
-    fi
+    # Do not remove nested idmp/; write marker so later starts skip remigration.
+    printf "flat-copy\n" > "/data/${marker}"
     echo MIGRATION_OK
   ' 2>&1) || migrate_exit=$?
+
   if [[ ${migrate_exit} -ne 0 ]]; then
     log error "Failed to migrate idmp_data volume (${volume_name})."
     log error "${migrate_result}"
+    log error "Original data remains under nested idmp/ for rollback."
     exit 1
   fi
 
   if [[ "$migrate_result" == *CONFLICT:* ]]; then
-    log warn "Some files already existed at volume root and were kept; nested copies may remain."
+    log warn "Some root paths already existed and were replaced from nested idmp/."
     log warn "${migrate_result}"
   fi
 
   if [[ "$migrate_result" == *MIGRATION_OK* || "$migrate_result" == *MIGRATION_SKIP* ]]; then
-    log info "idmp_data volume migration completed."
+    log info "idmp_data volume migration completed (nested idmp/ kept for rollback)."
+    if [[ "$migrate_result" == *ASIDE:* ]]; then
+      log info "Premature 2.x root data was moved aside (see ASIDE path in migration output)."
+    fi
+    log info "Rollback tip: remount idmp_data at /var/lib/taos to use nested idmp/ again."
   else
     log error "Unexpected migration result for idmp_data volume."
     log error "${migrate_result}"
