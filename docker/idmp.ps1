@@ -706,7 +706,10 @@ function Resolve-IdmpDataVolume {
 }
 
 function Resolve-VolumeHelperImage {
+  # Use only already-local images; never pull a helper image for migration.
   $candidates = @(
+    "tdengine/idmp-backend-ee:$(Get-EnvOrDefault 'IDMP_TAG')"
+    "tdengine/idmp-ai-ee:$(Get-EnvOrDefault 'IDMP_AI_TAG')"
     "alpine:3.20"
     "alpine:latest"
     "busybox:1.36"
@@ -714,22 +717,6 @@ function Resolve-VolumeHelperImage {
   )
 
   foreach ($imageRef in $candidates) {
-    if (Test-DockerImageExists $imageRef) {
-      return $imageRef
-    }
-  }
-
-  Write-Log info "Pulling alpine:3.20 for idmp_data volume migration..."
-  $pullExit = Invoke-Native -FilePath "docker" -ArgumentList @("pull", "alpine:3.20") -Quiet
-  if ($pullExit -eq 0) {
-    return "alpine:3.20"
-  }
-
-  $fallbackImages = @(
-    "tdengine/idmp-backend-ee:$(Get-EnvOrDefault 'IDMP_TAG')"
-    "tdengine/idmp-ai-ee:$(Get-EnvOrDefault 'IDMP_AI_TAG')"
-  )
-  foreach ($imageRef in $fallbackImages) {
     if (Test-DockerImageExists $imageRef) {
       return $imageRef
     }

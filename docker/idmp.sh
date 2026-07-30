@@ -393,22 +393,11 @@ function resolve_idmp_data_volume() {
 
 function resolve_volume_helper_image() {
   local image_ref
-  for image_ref in alpine:3.20 alpine:latest busybox:1.36 busybox:latest; do
-    if docker image inspect "$image_ref" >/dev/null 2>&1; then
-      echo "$image_ref"
-      return 0
-    fi
-  done
-
-  log info "Pulling alpine:3.20 for idmp_data volume migration..."
-  if docker pull alpine:3.20 >/dev/null 2>&1; then
-    echo "alpine:3.20"
-    return 0
-  fi
-
+  # Use already-local images first for volume migration.
   for image_ref in \
     "tdengine/idmp-backend-ee:${IDMP_TAG:-latest}" \
-    "tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}"; do
+    "tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}" \
+    alpine:3.20 alpine:latest busybox:1.36 busybox:latest; do
     if docker image inspect "$image_ref" >/dev/null 2>&1; then
       echo "$image_ref"
       return 0
