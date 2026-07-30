@@ -146,7 +146,7 @@ function select_compose_mode() {
     return
   fi
 
-  echo -e "${GREEN_DARK}Please select deployment mode:${NC}"
+  log info "Please select deployment mode:"
   echo "1) Standard deployment (TSDB Enterprise + IDMP + CLS) (docker-compose.yml)"
   echo "2) Full deployment (TSDB Enterprise + IDMP + TDgpt + CLS + TDModel) (docker-compose-tdgpt.yml)"
 
@@ -164,7 +164,7 @@ function select_compose_mode() {
         break
         ;;
       *)
-        echo -e "${YELLOW}Invalid choice. Please enter 1 or 2.${NC}"
+        log warn "Invalid choice. Please enter 1 or 2."
         ;;
     esac
   done
@@ -198,7 +198,7 @@ function setup_url() {
       idmp_url="${new_idmp_url:-$idmp_url}"
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
+      log warn "Please enter y, n, or press Enter (default Y)."
     fi
   done
 
@@ -224,7 +224,7 @@ function setup_license_server_addr() {
       license_server_addr="${new_license_server_addr:-$license_server_addr}"
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
+      log warn "Please enter y, n, or press Enter (default Y)."
     fi
   done
 
@@ -260,7 +260,7 @@ function check_and_upgrade_images() {
   done
 
   if [[ ${#missing_images[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}The following images do not exist locally and will be pulled by Docker Compose on start:${NC}"
+    log warn "The following images do not exist locally and will be pulled before start:"
     for image_ref in "${missing_images[@]}"; do
       echo "  - $image_ref"
     done
@@ -268,7 +268,7 @@ function check_and_upgrade_images() {
 
   [[ ${#existing_images[@]} -eq 0 ]] && return 0
 
-  echo -e "${YELLOW}The following images already exist locally:${NC}"
+  log warn "The following images already exist locally:"
   for image_ref in "${existing_images[@]}"; do
     echo "  - $image_ref"
   done
@@ -294,7 +294,7 @@ function check_and_upgrade_images() {
       log info "Skipping update, using existing images."
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y).${NC}"
+      log warn "Please enter y, n, or press Enter (default Y)."
     fi
   done
 }
@@ -312,7 +312,7 @@ function ask_git_enable() {
       log info "Git version control enabled."
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default Y, y disables).${NC}"
+      log warn "Please enter y, n, or press Enter (default Y, y disables)."
     fi
   done
 }
@@ -393,22 +393,11 @@ function resolve_idmp_data_volume() {
 
 function resolve_volume_helper_image() {
   local image_ref
-  for image_ref in alpine:3.20 alpine:latest busybox:1.36 busybox:latest; do
-    if docker image inspect "$image_ref" >/dev/null 2>&1; then
-      echo "$image_ref"
-      return 0
-    fi
-  done
-
-  log info "Pulling alpine:3.20 for idmp_data volume migration..."
-  if docker pull alpine:3.20 >/dev/null 2>&1; then
-    echo "alpine:3.20"
-    return 0
-  fi
-
+  # Prefer IDMP images already pulled by pull_missing_images.
   for image_ref in \
     "tdengine/idmp-backend-ee:${IDMP_TAG:-latest}" \
-    "tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}"; do
+    "tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}" \
+    alpine:3.20 alpine:latest busybox:1.36 busybox:latest; do
     if docker image inspect "$image_ref" >/dev/null 2>&1; then
       echo "$image_ref"
       return 0
@@ -505,6 +494,43 @@ function migrate_idmp_data_volume_if_needed() {
   fi
 }
 
+function pull_missing_images() {
+  local pull_ret=0
+  local image_ref
+  local images=()
+
+  log info "Pulling missing images ..."
+  if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
+    ${compose_cmd} -f "${compose_file}" pull --policy missing
+    pull_ret=$?
+  else
+    # docker-compose v1 has no --policy; pull only images that are absent locally.
+    images+=("tdengine/tsdb-ee:${TSDB_TAG:-latest}")
+    images+=("tdengine/idmp-backend-ee:${IDMP_TAG:-latest}")
+    images+=("tdengine/idmp-ui-ee:${IDMP_TAG:-latest}")
+    images+=("tdengine/idmp-ai-ee:${IDMP_AI_TAG:-latest}")
+    images+=("tdengine/cls:${CLS_TAG:-latest}")
+    if [[ "$compose_file" == "docker-compose-tdgpt.yml" ]]; then
+      images+=("tdengine/tdgpt-full:${TDGPT_TAG:-latest}")
+      images+=("tdengine/tdmodel:${TDMODEL_TAG:-latest}")
+    fi
+    for image_ref in "${images[@]}"; do
+      if ! docker image inspect "$image_ref" >/dev/null 2>&1; then
+        log info "Pulling ${image_ref}..."
+        if ! docker pull "$image_ref"; then
+          pull_ret=1
+          break
+        fi
+      fi
+    done
+  fi
+
+  if [[ ${pull_ret} -ne 0 ]]; then
+    log error "Failed to pull missing images. Please check the output and try again."
+    exit 1
+  fi
+}
+
 function start_services() {
   check_docker_compose
   select_compose_mode
@@ -520,6 +546,7 @@ function start_services() {
     check_docker_memory
   fi
 
+  pull_missing_images
   migrate_idmp_data_volume_if_needed
   remove_legacy_idmp_container
 
@@ -527,9 +554,6 @@ function start_services() {
   if compose_services_exist; then
     log info "Existing services detected, forcing recreate..."
     up_args+=(--force-recreate)
-  fi
-  if [[ ${compose_supports_pull_policy} -eq 1 ]]; then
-    up_args+=(--pull missing)
   fi
 
   log info "Starting services with ${compose_file}..."
@@ -622,7 +646,7 @@ function stop_services() {
       ret=$?
       break
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
+      log warn "Please enter y, n, or press Enter (default N)."
     fi
   done
 
@@ -696,29 +720,29 @@ function clean_environment() {
     fi
   done
 
-  echo -e "${YELLOW}This will remove containers, volumes, and images for the IDMP environment.${NC}"
-  echo -e "${YELLOW}Compose files used:${NC}"
+  log warn "This will remove containers, volumes, and images for the IDMP environment."
+  log warn "Compose files used:"
   for compose_file_ref in "${compose_files[@]}"; do
     echo "  - $compose_file_ref"
   done
 
-  echo -e "${YELLOW}Containers managed by this environment:${NC}"
+  log warn "Containers managed by this environment:"
   for container_name in "${container_names[@]}"; do
     echo "  - $container_name"
   done
 
-  echo -e "${YELLOW}Compose volumes to remove:${NC}"
+  log warn "Compose volumes to remove:"
   for volume_name in "${volume_names[@]}"; do
     echo "  - $volume_name"
   done
 
-  echo -e "${YELLOW}Compose networks to remove:${NC}"
+  log warn "Compose networks to remove:"
   for network_name in "${network_names[@]}"; do
     echo "  - $network_name"
   done
 
   if [[ ${#images[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}The following images will be removed:${NC}"
+    log warn "The following images will be removed:"
     for image_ref in "${images[@]}"; do
       echo "  - $image_ref"
     done
@@ -735,7 +759,7 @@ function clean_environment() {
       log info "Clean canceled."
       return
     else
-      echo -e "${YELLOW}Please enter y, n, or press Enter (default N).${NC}"
+      log warn "Please enter y, n, or press Enter (default N)."
     fi
   done
 
