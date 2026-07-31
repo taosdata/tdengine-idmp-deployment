@@ -33,6 +33,7 @@ services:
       TZ: "${TZ:-UTC}"
       EXPLORER_SKIP_REGISTER: "${EXPLORER_SKIP_REGISTER:-true}"
       TAOS_FQDN: "${TAOS_FQDN:-tdengine-tsdb}"
+      EXPLORER_ALLOWED_ORIGINS: "${EXPLORER_ALLOWED_ORIGINS:-http://localhost:6042,https://localhost:6034}"
     ports:
       - "6030:6030"
       - "6041:6041"
