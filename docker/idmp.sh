@@ -617,7 +617,7 @@ function start_services() {
   if [[ -z "${EXPLORER_ALLOWED_ORIGINS:-}" ]]; then
     EXPLORER_ALLOWED_ORIGINS="http://localhost:6042,https://localhost:6034"
     if [[ -n "${host_ip}" ]]; then
-      EXPLORER_ALLOWED_ORIGINS="${EXPLORER_ALLOWED_ORIGINS},http://${host_ip}:6042,https://${host_ip}:6034,http://localhost:6042,https://localhost:6034"
+      EXPLORER_ALLOWED_ORIGINS="${EXPLORER_ALLOWED_ORIGINS},http://${host_ip}:6042,https://${host_ip}:6034"
     fi
   fi
   export EXPLORER_ALLOWED_ORIGINS
