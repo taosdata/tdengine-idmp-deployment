@@ -20,6 +20,7 @@ if (Test-Path variable:/PSNativeCommandUseErrorActionPreference) {
 
 $script:IdmpUrl = "http://localhost:6042"
 $script:LicenseServerAddr = "http://localhost:6059"
+$script:HostIp = ""
 $script:ComposeFile = "docker-compose.yml"
 $script:ComposeCmd = @()
 $script:ComposeSupportsPullPolicy = $false
@@ -426,8 +427,10 @@ function Test-Ipv4Address {
 }
 
 function Setup-Url {
+  $script:HostIp = ""
   $hostIp = Get-HostIpAddress
   if ($null -ne $hostIp -and (Test-Ipv4Address $hostIp)) {
+    $script:HostIp = $hostIp
     $script:IdmpUrl = "http://${hostIp}:6042"
   }
   elseif ($null -ne $hostIp) {
@@ -948,6 +951,13 @@ function Start-Services {
 
   $env:IDMP_URL = $script:IdmpUrl
   $env:TDA_LICENSE_SERVER_ADDR = $script:LicenseServerAddr
+  if ([string]::IsNullOrWhiteSpace($env:EXPLORER_ALLOWED_ORIGINS)) {
+    $env:EXPLORER_ALLOWED_ORIGINS = "http://localhost:6042,https://localhost:6034"
+    if (-not [string]::IsNullOrWhiteSpace($script:HostIp)) {
+      $env:EXPLORER_ALLOWED_ORIGINS = "$($env:EXPLORER_ALLOWED_ORIGINS),http://$($script:HostIp):6042,https://$($script:HostIp):6034"
+    }
+  }
+  Write-Log info "Explorer allowed origins: $($env:EXPLORER_ALLOWED_ORIGINS)"
 
   if ($script:NeedCheckMemory) {
     Check-DockerMemory

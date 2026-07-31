@@ -2,6 +2,7 @@
 
 idmp_url="http://localhost:6042"
 license_server_addr="http://localhost:6059"
+host_ip=""
 compose_file="docker-compose.yml"
 compose_cmd=""
 compose_supports_pull_policy=0
@@ -171,7 +172,7 @@ function select_compose_mode() {
 }
 
 function setup_url() {
-  local host_ip
+  host_ip=""
 
   if command -v ip >/dev/null 2>&1; then
     host_ip=$(ip addr | grep 'inet ' | grep -vE '127.0.0.1|docker' | awk '{print $2}' | cut -d/ -f1 | head -n1)
@@ -185,6 +186,7 @@ function setup_url() {
     idmp_url="http://${host_ip}:6042"
   else
     log warn "Failed to detect a valid IP address: ${host_ip}"
+    host_ip=""
   fi
 
   while true; do
@@ -612,6 +614,14 @@ function start_services() {
   setup_timezone
   export IDMP_URL=${idmp_url}
   export TDA_LICENSE_SERVER_ADDR=${license_server_addr}
+  if [[ -z "${EXPLORER_ALLOWED_ORIGINS:-}" ]]; then
+    EXPLORER_ALLOWED_ORIGINS="http://localhost:6042,https://localhost:6034"
+    if [[ -n "${host_ip}" ]]; then
+      EXPLORER_ALLOWED_ORIGINS="${EXPLORER_ALLOWED_ORIGINS},http://${host_ip}:6042,https://${host_ip}:6034,http://localhost:6042,https://localhost:6034"
+    fi
+  fi
+  export EXPLORER_ALLOWED_ORIGINS
+  log info "Explorer allowed origins: ${EXPLORER_ALLOWED_ORIGINS}"
 
   if [[ $need_check_memory -eq 1 ]]; then
     check_docker_memory
